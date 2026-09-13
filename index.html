@@ -1097,8 +1097,8 @@
 
   function pickCardByRand(rand) {
     let rarity;
-    if (rand < 0.1) rarity = 'Ω';
-    else if (rand < 1.6) rarity = 'UR';
+    if (rand < 0.01) rarity = 'Ω';
+    else if (rand < 0.1) rarity = 'UR';
     else if (rand < 5.6) rarity = 'SSR';
     else if (rand < 14.6) rarity = 'SR';
     else if (rand < 47.6) rarity = 'R';
