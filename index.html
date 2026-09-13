@@ -93,6 +93,19 @@
     50% { opacity: 0.25; }
   }
 
+  .access-counter {
+    display: block;
+    max-width: 420px;
+    margin: 0 auto 16px auto;
+    font-size: 12.5px;
+    font-weight: bold;
+    color: var(--cyan);
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--cyan);
+    border-radius: 20px;
+    padding: 6px 16px;
+  }
+
   .token-bar {
     max-width: 420px;
     margin: 0 auto 40px auto;
@@ -468,6 +481,8 @@
   </div>
 </div>
 
+<p class="access-counter">👀 累計来場者数: <span id="total-visits">読み込み中...</span> 人目！</p>
+
 <div class="token-bar">
   🎫 トークン: <span id="ticket-count-header">5</span> 枚
 </div>
@@ -520,7 +535,7 @@
     <span class="cabinet-icon">🏃</span>
     <p class="cabinet-title">障害物を飛び越えろ！</p>
   </div>
-  <p class="cabinet-desc">キャラクターは自動で走るよ。タップしてジャンプ、障害物を避けよう！生き残るほどトークンGET（5秒ごとに+1枚）</p>
+  <p class="cabinet-desc">キャラクターは自動で走るよ。スタートを押したらボタンでジャンプ、障害物を避けよう！生き残るほどトークンGET（2秒ごとに+1枚、1分経過ごとにレートアップ）</p>
 
   <div class="status-row">
     <span id="runner-timer">生存時間: 0.0秒</span>
@@ -528,11 +543,11 @@
   </div>
 
   <div class="runner-canvas-wrap">
-    <canvas id="runner-canvas" width="340" height="150" onclick="runnerJump()" ontouchstart="runnerJump(); event.preventDefault();"></canvas>
+    <canvas id="runner-canvas" width="340" height="150"></canvas>
   </div>
-  <p class="runner-hint">画面をタップしてジャンプ！</p>
+  <p class="runner-hint" id="runner-hint">スタートを押して開始、その後はボタンでジャンプ！</p>
 
-  <button id="runner-start-btn" class="arcade-btn btn-orange" style="width:100%; margin-top:10px;" onclick="startRunnerGame()">スタート！！</button>
+  <button id="runner-action-btn" class="arcade-btn btn-orange" style="width:100%; margin-top:10px;" onclick="runnerActionButton()">スタート！！</button>
   <div class="result-line" id="runner-result"></div>
 
   <div class="runner-name-form" id="runner-name-form">
@@ -812,6 +827,9 @@
   let pendingRunnerTickets = 0;
   let ticketTickCount = 0;
   let pendingRunnerScore = 0;
+  let bgScrollSlow = 0;
+  let bgScrollMed = 0;
+  let bgScrollDash = 0;
 
   function startRunnerGame() {
     if (runnerPlaying) return;
@@ -826,12 +844,25 @@
     player.jumping = false;
     pendingRunnerTickets = 0;
     ticketTickCount = 0;
+    bgScrollSlow = 0;
+    bgScrollMed = 0;
+    bgScrollDash = 0;
     document.getElementById('runner-result').innerText = '';
     document.getElementById('runner-name-form').style.display = 'none';
-    document.getElementById('runner-start-btn').disabled = true;
     document.getElementById('runner-ticket-live').innerText = '🎫 獲得予定: 0枚';
+    document.getElementById('runner-hint').innerText = 'ボタンをタップしてジャンプ！';
+    const btn = document.getElementById('runner-action-btn');
+    btn.innerText = 'ジャンプ！';
     runnerStartTs = performance.now();
     runnerAnimId = requestAnimationFrame(runnerLoop);
+  }
+
+  function runnerActionButton() {
+    if (!runnerPlaying) {
+      startRunnerGame();
+    } else {
+      runnerJump();
+    }
   }
 
   function runnerJump() {
@@ -846,6 +877,56 @@
     runnerElapsed = (ts - runnerStartTs) / 1000;
 
     rctx.clearRect(0, 0, RUNNER_W, RUNNER_H);
+
+    // --- 空のグラデーション ---
+    const skyGrad = rctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    skyGrad.addColorStop(0, '#2a1148');
+    skyGrad.addColorStop(1, '#4a2a7a');
+    rctx.fillStyle = skyGrad;
+    rctx.fillRect(0, 0, RUNNER_W, GROUND_Y);
+
+    // --- 遠景の山（ゆっくりスクロール、視差効果） ---
+    bgScrollSlow -= runnerSpeed * 0.15;
+    const slowPhase = ((bgScrollSlow % 140) + 140) % 140;
+    rctx.fillStyle = 'rgba(179,136,255,0.25)';
+    for (let k = -1; k <= 2; k++) {
+      const baseX = (k * 140) + slowPhase;
+      rctx.beginPath();
+      rctx.moveTo(baseX, GROUND_Y);
+      rctx.lineTo(baseX + 45, GROUND_Y - 55);
+      rctx.lineTo(baseX + 90, GROUND_Y);
+      rctx.closePath();
+      rctx.fill();
+    }
+
+    // --- 雲（中距離スクロール） ---
+    bgScrollMed -= runnerSpeed * 0.35;
+    const medPhase = ((bgScrollMed % 160) + 160) % 160;
+    rctx.fillStyle = 'rgba(255,255,255,0.18)';
+    for (let k = -1; k <= 2; k++) {
+      const cx = (k * 160) + medPhase;
+      const cy = 24 + (k % 2) * 14;
+      rctx.beginPath();
+      rctx.ellipse(cx, cy, 20, 8, 0, 0, Math.PI * 2);
+      rctx.ellipse(cx + 14, cy + 3, 14, 7, 0, 0, Math.PI * 2);
+      rctx.fill();
+    }
+
+    // --- 地面（流れる縞模様でスピード感を演出） ---
+    rctx.fillStyle = '#150826';
+    rctx.fillRect(0, GROUND_Y, RUNNER_W, RUNNER_H - GROUND_Y);
+    rctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    rctx.lineWidth = 3;
+    const dashSpacing = 26;
+    bgScrollDash -= runnerSpeed;
+    const dashOffset = ((bgScrollDash % dashSpacing) + dashSpacing) % dashSpacing;
+    rctx.beginPath();
+    for (let dx = dashOffset; dx < RUNNER_W; dx += dashSpacing) {
+      rctx.moveTo(dx, GROUND_Y + 6);
+      rctx.lineTo(dx + 12, GROUND_Y + 6);
+    }
+    rctx.stroke();
+    rctx.lineWidth = 1;
     rctx.strokeStyle = 'rgba(255,255,255,0.25)';
     rctx.beginPath();
     rctx.moveTo(0, GROUND_Y);
@@ -886,13 +967,13 @@
       if (o.x + o.w < 0) obstacles.splice(i, 1);
     }
 
-    // 5秒ごとにトークン獲得。獲得レートは1分経過するごとに+1枚ずつ上がる
-    const intervalsElapsed = Math.floor(runnerElapsed / 5);
+    // 2秒ごとにトークン獲得。獲得レートは1分経過するごとに+1枚ずつ上がる
+    const intervalsElapsed = Math.floor(runnerElapsed / 2);
     if (intervalsElapsed > ticketTickCount) {
       const rate = 1 + Math.floor(runnerElapsed / 60);
       pendingRunnerTickets += rate * (intervalsElapsed - ticketTickCount);
       ticketTickCount = intervalsElapsed;
-      document.getElementById('runner-ticket-live').innerText = `🎫 獲得予定: ${pendingRunnerTickets}枚（現在 5秒ごとに${rate}枚）`;
+      document.getElementById('runner-ticket-live').innerText = `🎫 獲得予定: ${pendingRunnerTickets}枚（現在 2秒ごとに${rate}枚）`;
     }
     document.getElementById('runner-timer').innerText = `生存時間: ${runnerElapsed.toFixed(1)}秒`;
 
@@ -909,7 +990,8 @@
     if (earned > 0) updateTickets(earned);
     document.getElementById('runner-result').innerHTML =
       `🏁 ゲームオーバー！生存時間: ${finalScore}秒<br>🎫 トークンを${earned}枚GET！`;
-    document.getElementById('runner-start-btn').disabled = false;
+    document.getElementById('runner-hint').innerText = 'スタートを押して開始、その後はボタンでジャンプ！';
+    document.getElementById('runner-action-btn').innerText = 'もう一度スタート！！';
 
     if (maybeQualifiesForLeaderboard(finalScore)) {
       pendingRunnerScore = finalScore;
@@ -953,10 +1035,18 @@
       currentLeaderboard = Array.isArray(data) ? data : Object.values(data);
       renderLeaderboard();
     });
+
+    // 累計アクセスカウンター（全員の画面にリアルタイム反映）
+    const visitsRef = firebase.database().ref('minigameVisits');
+    visitsRef.on('value', (snap) => {
+      document.getElementById('total-visits').innerText = snap.val() || 0;
+    });
+    visitsRef.transaction((current) => (current || 0) + 1);
   } catch (e) {
     console.error('ランキング機能の初期化に失敗しました（Firebase設定を確認してください）:', e);
     document.getElementById('leaderboard-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">ランキング機能は準備中です。</p>';
+    document.getElementById('total-visits').innerText = '準備中';
   }
 
   function escapeHtml(str) {
