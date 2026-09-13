@@ -256,9 +256,11 @@
   }
   .runner-hint {
     font-size: 11.5px;
+    line-height: 1.5;
     color: var(--ink-dim);
     text-align: center;
     margin-top: 6px;
+    min-height: 34px;
   }
   .runner-name-form {
     display: none;
@@ -842,12 +844,13 @@
   ];
 
   // 経過時間に応じて出現する障害物の種類を増やす（ground常時 / fastは15秒〜 / airは25秒〜）
-  function pickObstacleType(elapsed) {
+  // allowSpecial: 直前の間隔が十分空いてる時だけ車・ヘリを許可（ジャンプが間に合うように）
+  function pickObstacleType(elapsed, allowSpecial, lastKind) {
     const pool = [];
     OBSTACLE_TYPES.forEach(t => {
       if (t.kind === 'ground') pool.push({ t, weight: 5 });
-      else if (t.kind === 'fast' && elapsed >= 10) pool.push({ t, weight: 2.2 });
-      else if (t.kind === 'air' && elapsed >= 18) pool.push({ t, weight: 1.4 });
+      else if (t.kind === 'fast' && elapsed >= 15 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 2 });
+      else if (t.kind === 'air' && elapsed >= 25 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 1.2 });
     });
     const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
     let r = Math.random() * totalWeight;
@@ -866,6 +869,7 @@
   let obstacles = [];
   let obstacleTimer = 0;
   let nextObstacleGap = 60;
+  let lastObstacleKind = 'ground';
   let player = { x: 44, y: GROUND_Y - 30, w: 30, h: 30, vy: 0, jumping: false };
   let pendingRunnerTickets = 0;
   let ticketTickCount = 0;
@@ -888,10 +892,11 @@
     if (runnerPlaying) return;
     runnerPlaying = true;
     runnerElapsed = 0;
-    runnerSpeed = 3.6;
+    runnerSpeed = 3.2;
     obstacles = [];
     obstacleTimer = 0;
     nextObstacleGap = 60 + Math.random() * 40;
+    lastObstacleKind = 'ground';
     player.y = GROUND_Y - player.h;
     player.vy = 0;
     player.jumping = false;
@@ -1000,9 +1005,13 @@
     // --- 障害物のスポーン（経過時間に応じて速度・間隔・種類が変化） ---
     obstacleTimer++;
     if (obstacleTimer > nextObstacleGap) {
+      const thisGap = nextObstacleGap;
       obstacleTimer = 0;
-      nextObstacleGap = Math.max(18, 58 - runnerElapsed * 1.8 + Math.random() * 22);
-      const type = pickObstacleType(runnerElapsed);
+      nextObstacleGap = Math.max(22, 65 - runnerElapsed * 1.6 + Math.random() * 25);
+      // 直前の間隔が狭かった時は車・ヘリを出さない（ジャンプが間に合うように）
+      const allowSpecial = thisGap >= 45;
+      const type = pickObstacleType(runnerElapsed, allowSpecial, lastObstacleKind);
+      lastObstacleKind = type.kind;
       if (type.kind === 'air') {
         // ヘリコプター：立ってれば当たらないが、ジャンプの軌道上に必ず重なる高さに配置
         obstacles.push({ x: RUNNER_W, w: 34, h: 26, emoji: type.emoji, kind: 'air', y: GROUND_Y - (65 + Math.random() * 15), speedMult: 1.1 });
@@ -1012,7 +1021,7 @@
         obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji: type.emoji, kind: 'ground', speedMult: 1 });
       }
     }
-    runnerSpeed = Math.min(10.5, 3.6 + runnerElapsed * 0.22);
+    runnerSpeed = Math.min(9, 3.2 + runnerElapsed * 0.18);
 
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const o = obstacles[i];
