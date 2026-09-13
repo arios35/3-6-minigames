@@ -491,7 +491,7 @@
 <div class="cabinet cab-cyan">
   <div class="cabinet-header">
     <span class="cabinet-icon">⚡</span>
-    <p class="cabinet-title">反射神経チャレンジ（まだ遊べません）</p>
+    <p class="cabinet-title">反射神経チャレンジ</p>
   </div>
   <p class="cabinet-desc">緑になった瞬間にタップ！3回の平均で判定（平均250ms未満:15枚 / 350ms未満:10枚 / 450ms未満:5枚 / 600ms未満:2枚）</p>
   <div class="reaction-pad" id="reaction-pad" onclick="reactionTap()">タップしてスタート</div>
@@ -562,12 +562,12 @@
   <div id="gacha-result" class="gacha-result-box" style="display:none;"></div>
 
   <div class="rarity-legend">
-    <span class="rarity-n">N 52.4%</span>
-    <span class="rarity-r">R 33%</span>
+    <span class="rarity-n">N 53.89%</span>
+    <span class="rarity-r">R 35%</span>
     <span class="rarity-sr">SR 9%</span>
-    <span class="rarity-ssr">SSR 4%</span>
-    <span class="rarity-ur">UR 1.5%</span>
-    <span class="rarity-omega">Ω 0.1%</span>
+    <span class="rarity-ssr">SSR 2%</span>
+    <span class="rarity-ur">UR 0.1%</span>
+    <span class="rarity-omega">Ω 0.01%</span>
   </div>
 
   <button class="arcade-btn btn-gold album-toggle-btn" onclick="toggleAlbum()" id="album-toggle-btn">📖 図鑑を見る</button>
@@ -583,7 +583,7 @@
   <div class="cutin-content">
     <p id="cutin-sub-title" class="cutin-text-panel" style="font-size:26px; color:#fff; margin:0; font-weight:900; text-shadow:0 0 10px #000;">🎉🎉🎉 奇跡降臨 🎉🎉🎉</p>
     <h2 id="cutin-main-title">🌌 Ω お前は一体何者なんだ 🌌</h2>
-    <p id="cutin-desc" class="cutin-text-panel" style="font-size:20px; color:#fff; margin-top:15px; font-weight:bold; text-shadow:0 0 10px #000;">【0.1%】最高レアリティが降臨！！</p>
+    <p id="cutin-desc" class="cutin-text-panel" style="font-size:20px; color:#fff; margin-top:15px; font-weight:bold; text-shadow:0 0 10px #000;">【0.01%】最高レアリティが降臨！！</p>
     <p style="font-size:14px; color:#fff; margin-top:35px; background:rgba(0,0,0,0.7); display:inline-block; padding:8px 20px; border-radius:20px; border:1px solid #fff;">（タップして結果を確認する）</p>
   </div>
 </div>
@@ -684,7 +684,7 @@
       reactionState = 'retry';
       return;
     }
-    if (reactionState === 'retry') {
+    if (reactionState === 'retry' || reactionState === 'next') {
       beginReactionRound();
       return;
     }
@@ -698,7 +698,7 @@
       } else {
         pad.style.background = '#4a4a55';
         pad.innerText = `${reactionMs}ms！ タップして次のラウンドへ (${reactionRoundIndex}/${REACTION_ROUNDS})`;
-        reactionState = 'idle';
+        reactionState = 'next';
       }
     }
   }
@@ -798,6 +798,8 @@
   const GRAVITY = 0.9;
   const JUMP_VELOCITY = -13;
 
+  const OBSTACLE_EMOJIS = ['🌵', '🪨', '🚧', '📦', '🦔'];
+
   let runnerPlaying = false;
   let runnerAnimId = null;
   let runnerStartTs = 0;
@@ -858,13 +860,14 @@
       player.jumping = false;
     }
     rctx.font = '26px sans-serif';
-    rctx.fillText('🏃', player.x, player.y + player.h);
+    rctx.fillText('🏃‍➡️', player.x, player.y + player.h);
 
     obstacleTimer++;
     if (obstacleTimer > nextObstacleGap) {
       obstacleTimer = 0;
       nextObstacleGap = Math.max(35, 70 - runnerElapsed * 1.2 + Math.random() * 30);
-      obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14 });
+      const emoji = OBSTACLE_EMOJIS[Math.floor(Math.random() * OBSTACLE_EMOJIS.length)];
+      obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji });
     }
     runnerSpeed = 3.2 + runnerElapsed * 0.12;
 
@@ -873,7 +876,7 @@
       o.x -= runnerSpeed;
       const oy = GROUND_Y - o.h;
       rctx.font = (o.h + 4) + 'px sans-serif';
-      rctx.fillText('🌵', o.x, GROUND_Y);
+      rctx.fillText(o.emoji, o.x, GROUND_Y);
 
       const px = player.x, py = player.y, pw = player.w, ph = player.h;
       if (px < o.x + o.w && px + pw > o.x && py < oy + o.h && py + ph > oy) {
@@ -883,10 +886,13 @@
       if (o.x + o.w < 0) obstacles.splice(i, 1);
     }
 
-    if (Math.floor(runnerElapsed / 5) > ticketTickCount) {
-      ticketTickCount = Math.floor(runnerElapsed / 5);
-      pendingRunnerTickets = ticketTickCount;
-      document.getElementById('runner-ticket-live').innerText = `🎫 獲得予定: ${pendingRunnerTickets}枚`;
+    // 5秒ごとにトークン獲得。獲得レートは1分経過するごとに+1枚ずつ上がる
+    const intervalsElapsed = Math.floor(runnerElapsed / 5);
+    if (intervalsElapsed > ticketTickCount) {
+      const rate = 1 + Math.floor(runnerElapsed / 60);
+      pendingRunnerTickets += rate * (intervalsElapsed - ticketTickCount);
+      ticketTickCount = intervalsElapsed;
+      document.getElementById('runner-ticket-live').innerText = `🎫 獲得予定: ${pendingRunnerTickets}枚（現在 5秒ごとに${rate}枚）`;
     }
     document.getElementById('runner-timer').innerText = `生存時間: ${runnerElapsed.toFixed(1)}秒`;
 
@@ -996,7 +1002,7 @@
     { no: 2,  rarity: 'N',  emoji: '🧊', name: '保冷剤' },
     { no: 3,  rarity: 'N',  emoji: '🥢', name: '割り箸' },
     { no: 4,  rarity: 'N',  emoji: '🔴', name: '輪ゴム' },
-    { no: 5,  rarity: 'N',  emoji: '🌂', name: '誰かの傘' },
+    { no: 5,  rarity: 'N',  emoji: '🧻', name: 'ペーパーナプキン' },
     { no: 6,  rarity: 'N',  emoji: '🥄', name: '使い捨てスプーン' },
     { no: 7,  rarity: 'N',  emoji: '🧾', name: 'レシートの切れ端' },
     { no: 8,  rarity: 'N',  emoji: '❄️', name: '氷のかけら' },
@@ -1011,17 +1017,32 @@
     { no: 17, rarity: 'R',  emoji: '🧋', name: 'タピオカ風ゼリー' },
     { no: 18, rarity: 'R',  emoji: '📝', name: '手書きPOP' },
     { no: 19, rarity: 'SR', emoji: '👕', name: '暇人Tシャツ' },
-    { no: 20, rarity: 'SR', emoji: '🎽', name: '三年六組ハチマキ' },
+    { no: 20, rarity: 'SR', emoji: '👕', name: '男塾Tシャツ' },
     { no: 21, rarity: 'SR', emoji: '📜', name: '秘伝のたれレシピ' },
     { no: 22, rarity: 'SR', emoji: '⭐', name: '文化祭限定シール' },
-    { no: 23, rarity: 'SR', emoji: '🎆', name: '打ち上げ花火' },
+    { no: 23, rarity: 'SR', emoji: '🎆', name: '打ち上げ花火の余韻' },
     { no: 24, rarity: 'SR', emoji: '🪭', name: '伝説のうちわ' },
     { no: 25, rarity: 'SSR', emoji: '🌟', name: '伝説の暇人' },
     { no: 26, rarity: 'SSR', emoji: '💫', name: '暇を極めし者' },
     { no: 27, rarity: 'SSR', emoji: '🏆', name: '三年六組MVP認定証' },
-    { no: 28, rarity: 'UR', emoji: '😊', name: '幻のメニュー「スマイル」' },
+    { no: 28, rarity: 'UR', emoji: '😊', name: '幻の裏メニュー「スマイル+1」' },
     { no: 29, rarity: 'UR', emoji: '👑', name: '暇人の称号' },
-    { no: 30, rarity: 'Ω',  emoji: '🌌', name: 'お前は一体何者なんだ' }
+    { no: 30, rarity: 'Ω',  emoji: '🌌', name: 'お前は一体何者なんだ' },
+    { no: 31, rarity: 'Ω',  emoji: '🍾', name: '伝説のシャンパン' },
+    { no: 32, rarity: 'Ω',  emoji: '☕', name: '校長カフェ' },
+    { no: 33, rarity: 'UR', emoji: '🏪', name: '幻の購買' },
+    { no: 34, rarity: 'UR', emoji: '💖', name: '豊かな心' },
+    { no: 35, rarity: 'SSR', emoji: '🪪', name: 'No.1の名刺' },
+    { no: 36, rarity: 'SSR', emoji: '📶', name: 'カスWiFi' },
+    { no: 37, rarity: 'SR', emoji: '📜', name: '長い原稿用紙' },
+    { no: 38, rarity: 'SR', emoji: '🕰️', name: '校門の壊れた時計' },
+    { no: 39, rarity: 'R', emoji: '✏️', name: 'シャーペンの芯' },
+    { no: 40, rarity: 'R', emoji: '🍜', name: 'やきそば' },
+    { no: 41, rarity: 'R', emoji: '🧻', name: 'キムワイプ' },
+    { no: 42, rarity: 'R', emoji: '📲', name: 'abceed' },
+    { no: 43, rarity: 'N', emoji: '📓', name: 'ロイロノート' },
+    { no: 44, rarity: 'N', emoji: '☂️', name: '誰かの傘' },
+    { no: 45, rarity: 'N', emoji: '📱', name: 'スマホ' }
   ];
   const RARITY_LEVEL = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4, 'Ω': 5 };
   const RARITY_CLASS = { N: 'rarity-n', R: 'rarity-r', SR: 'rarity-sr', SSR: 'rarity-ssr', UR: 'rarity-ur', 'Ω': 'rarity-omega' };
@@ -1098,10 +1119,10 @@
   function pickCardByRand(rand) {
     let rarity;
     if (rand < 0.01) rarity = 'Ω';
-    else if (rand < 0.1) rarity = 'UR';
-    else if (rand < 5.6) rarity = 'SSR';
-    else if (rand < 14.6) rarity = 'SR';
-    else if (rand < 47.6) rarity = 'R';
+    else if (rand < 0.11) rarity = 'UR';
+    else if (rand < 2.11) rarity = 'SSR';
+    else if (rand < 11.11) rarity = 'SR';
+    else if (rand < 46.11) rarity = 'R';
     else rarity = 'N';
     const pool = CARDS.filter(c => c.rarity === rarity);
     return pool[Math.floor(Math.random() * pool.length)];
@@ -1185,11 +1206,8 @@
         document.body.classList.add('omega-bg');
         alert(specialMsg);
         setTimeout(() => { document.body.classList.remove('omega-bg'); }, 8000);
-      } else if (maxLevel === 2) {
-        document.body.classList.add('rainbow-bg');
-        alert(specialMsg);
-        setTimeout(() => { document.body.classList.remove('rainbow-bg'); }, 5000);
       }
+      // SR(maxLevel === 2)以下は特別な演出なし。結果一覧にだけ表示されます。
     }, 500);
   }
 
