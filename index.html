@@ -152,7 +152,7 @@
   .cab-pink   { border-color: var(--pink);   box-shadow: 0 0 18px rgba(255,47,160,0.25); }
   .cab-cyan   { border-color: var(--cyan);   box-shadow: 0 0 18px rgba(0,229,255,0.25); }
   .cab-purple { border-color: var(--purple); box-shadow: 0 0 18px rgba(179,136,255,0.25); }
-  .cab-orange { border-color: var(--orange); box-shadow: 0 0 18px rgba(255,138,61,0.25); }
+  .cab-orange { border-color: var(--orange); box-shadow: 0 0 18px rgba(255,138,61,0.25); max-width: 460px; }
   .cab-gold   { border-color: var(--gold);   box-shadow: 0 0 18px rgba(255,210,63,0.25); }
 
   .arcade-btn {
@@ -522,7 +522,7 @@
   <p class="cabinet-desc">コンピュータが決めた1〜100の数字を当てよう！少ない回数で当てるほど高得点。一発正解なら300枚！</p>
   <button id="number-start-btn" class="arcade-btn btn-purple" style="width:100%;" onclick="startNumberGame()">スタート！！</button>
   <div class="number-input-row" style="margin-top:12px;">
-    <input type="number" id="number-input" class="number-input" placeholder="1〜100" min="1" max="100" disabled>
+    <input type="text" inputmode="numeric" pattern="[0-9]*" id="number-input" class="number-input" placeholder="1〜100" maxlength="10" disabled>
     <button id="number-guess-btn" class="arcade-btn btn-purple" onclick="submitGuess()" disabled>予想する</button>
   </div>
   <div class="number-feedback" id="number-feedback">スタートを押してね！</div>
@@ -543,7 +543,7 @@
   </div>
 
   <div class="runner-canvas-wrap">
-    <canvas id="runner-canvas" width="340" height="150"></canvas>
+    <canvas id="runner-canvas" width="420" height="260"></canvas>
   </div>
   <p class="runner-hint" id="runner-hint">スタートを押して開始、その後はボタンでジャンプ！</p>
 
@@ -778,7 +778,21 @@
   function submitGuess() {
     if (!numberGameActive) return;
     const input = document.getElementById('number-input');
-    const guess = parseInt(input.value, 10);
+    const rawValue = input.value.trim();
+
+    // 🛠️ 隠しコマンド：開発者モード
+    if (rawValue === '01203535') {
+      numberGameActive = false;
+      updateTickets(1000);
+      document.getElementById('number-feedback').innerText = '🛠️ 開発者コード認証！';
+      document.getElementById('number-result').innerHTML = '🎉 隠しコマンド成功！<br>🎫 トークンを1000枚GET！';
+      document.getElementById('number-input').disabled = true;
+      document.getElementById('number-guess-btn').disabled = true;
+      input.value = '';
+      return;
+    }
+
+    const guess = parseInt(rawValue, 10);
     if (isNaN(guess) || guess < 1 || guess > 100) {
       document.getElementById('number-feedback').innerText = '1〜100の数字を入力してね！';
       return;
@@ -787,7 +801,7 @@
 
     if (guess === secretNumber) {
       numberGameActive = false;
-      const reward = Math.max(2, Math.floor(1000 / Math.pow(2, guessAttempts - 1)));
+      const reward = Math.max(2, Math.floor(300 / Math.pow(2, guessAttempts - 1)));
       updateTickets(reward);
       document.getElementById('number-feedback').innerText = `🎉 正解！答えは${secretNumber}でした！`;
       document.getElementById('number-result').innerHTML = `${guessAttempts}回で正解！<br>🎫 トークンを${reward}枚GET！`;
@@ -813,7 +827,36 @@
   const GRAVITY = 0.9;
   const JUMP_VELOCITY = -13;
 
-  const OBSTACLE_EMOJIS = ['🌵', '🪨', '🚧', '📦', '🦔'];
+  const OBSTACLE_TYPES = [
+    { emoji: '🌵', kind: 'ground' },
+    { emoji: '🪨', kind: 'ground' },
+    { emoji: '🚧', kind: 'ground' },
+    { emoji: '📦', kind: 'ground' },
+    { emoji: '🦔', kind: 'ground' },
+    { emoji: '🚗', kind: 'fast' },
+    { emoji: '🚚', kind: 'fast' },
+    { emoji: '🚛', kind: 'fast' },
+    { emoji: '🚙', kind: 'fast' },
+    { emoji: '🛻', kind: 'fast' },
+    { emoji: '🚁', kind: 'air' }
+  ];
+
+  // 経過時間に応じて出現する障害物の種類を増やす（ground常時 / fastは15秒〜 / airは25秒〜）
+  function pickObstacleType(elapsed) {
+    const pool = [];
+    OBSTACLE_TYPES.forEach(t => {
+      if (t.kind === 'ground') pool.push({ t, weight: 5 });
+      else if (t.kind === 'fast' && elapsed >= 10) pool.push({ t, weight: 2.2 });
+      else if (t.kind === 'air' && elapsed >= 18) pool.push({ t, weight: 1.4 });
+    });
+    const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
+    let r = Math.random() * totalWeight;
+    for (const p of pool) {
+      if (r < p.weight) return p.t;
+      r -= p.weight;
+    }
+    return pool[0].t;
+  }
 
   let runnerPlaying = false;
   let runnerAnimId = null;
@@ -823,19 +866,29 @@
   let obstacles = [];
   let obstacleTimer = 0;
   let nextObstacleGap = 60;
-  let player = { x: 40, y: GROUND_Y - 26, w: 26, h: 26, vy: 0, jumping: false };
+  let player = { x: 44, y: GROUND_Y - 30, w: 30, h: 30, vy: 0, jumping: false };
   let pendingRunnerTickets = 0;
   let ticketTickCount = 0;
   let pendingRunnerScore = 0;
   let bgScrollSlow = 0;
-  let bgScrollMed = 0;
   let bgScrollDash = 0;
+  let clouds = [];
+
+  function initClouds() {
+    clouds = [];
+    for (let i = 0; i < 4; i++) {
+      clouds.push({
+        x: Math.random() * RUNNER_W,
+        y: 16 + Math.random() * 34
+      });
+    }
+  }
 
   function startRunnerGame() {
     if (runnerPlaying) return;
     runnerPlaying = true;
     runnerElapsed = 0;
-    runnerSpeed = 3.2;
+    runnerSpeed = 3.6;
     obstacles = [];
     obstacleTimer = 0;
     nextObstacleGap = 60 + Math.random() * 40;
@@ -845,8 +898,8 @@
     pendingRunnerTickets = 0;
     ticketTickCount = 0;
     bgScrollSlow = 0;
-    bgScrollMed = 0;
     bgScrollDash = 0;
+    initClouds();
     document.getElementById('runner-result').innerText = '';
     document.getElementById('runner-name-form').style.display = 'none';
     document.getElementById('runner-ticket-live').innerText = '🎫 獲得予定: 0枚';
@@ -899,18 +952,19 @@
       rctx.fill();
     }
 
-    // --- 雲（中距離スクロール） ---
-    bgScrollMed -= runnerSpeed * 0.35;
-    const medPhase = ((bgScrollMed % 160) + 160) % 160;
+    // --- 雲（固定オブジェクトとして横移動のみ。上下にジャンプしない） ---
     rctx.fillStyle = 'rgba(255,255,255,0.18)';
-    for (let k = -1; k <= 2; k++) {
-      const cx = (k * 160) + medPhase;
-      const cy = 24 + (k % 2) * 14;
+    clouds.forEach(c => {
+      c.x -= runnerSpeed * 0.35;
+      if (c.x < -40) {
+        c.x = RUNNER_W + Math.random() * 40;
+        c.y = 16 + Math.random() * 34;
+      }
       rctx.beginPath();
-      rctx.ellipse(cx, cy, 20, 8, 0, 0, Math.PI * 2);
-      rctx.ellipse(cx + 14, cy + 3, 14, 7, 0, 0, Math.PI * 2);
+      rctx.ellipse(c.x, c.y, 20, 8, 0, 0, Math.PI * 2);
+      rctx.ellipse(c.x + 14, c.y + 3, 14, 7, 0, 0, Math.PI * 2);
       rctx.fill();
-    }
+    });
 
     // --- 地面（流れる縞模様でスピード感を演出） ---
     rctx.fillStyle = '#150826';
@@ -940,24 +994,38 @@
       player.vy = 0;
       player.jumping = false;
     }
-    rctx.font = '26px sans-serif';
+    rctx.font = '30px sans-serif';
     rctx.fillText('🏃‍➡️', player.x, player.y + player.h);
 
+    // --- 障害物のスポーン（経過時間に応じて速度・間隔・種類が変化） ---
     obstacleTimer++;
     if (obstacleTimer > nextObstacleGap) {
       obstacleTimer = 0;
-      nextObstacleGap = Math.max(35, 70 - runnerElapsed * 1.2 + Math.random() * 30);
-      const emoji = OBSTACLE_EMOJIS[Math.floor(Math.random() * OBSTACLE_EMOJIS.length)];
-      obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji });
+      nextObstacleGap = Math.max(18, 58 - runnerElapsed * 1.8 + Math.random() * 22);
+      const type = pickObstacleType(runnerElapsed);
+      if (type.kind === 'air') {
+        // ヘリコプター：立ってれば当たらないが、ジャンプの軌道上に必ず重なる高さに配置
+        obstacles.push({ x: RUNNER_W, w: 34, h: 26, emoji: type.emoji, kind: 'air', y: GROUND_Y - (65 + Math.random() * 15), speedMult: 1.1 });
+      } else if (type.kind === 'fast') {
+        obstacles.push({ x: RUNNER_W, w: 28, h: 26 + Math.random() * 10, emoji: type.emoji, kind: 'fast', speedMult: 1.5 + Math.random() * 0.4 });
+      } else {
+        obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji: type.emoji, kind: 'ground', speedMult: 1 });
+      }
     }
-    runnerSpeed = 3.2 + runnerElapsed * 0.12;
+    runnerSpeed = Math.min(10.5, 3.6 + runnerElapsed * 0.22);
 
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const o = obstacles[i];
-      o.x -= runnerSpeed;
-      const oy = GROUND_Y - o.h;
+      o.x -= runnerSpeed * o.speedMult;
+
+      let oy;
+      if (o.kind === 'air') {
+        oy = o.y;
+      } else {
+        oy = GROUND_Y - o.h;
+      }
       rctx.font = (o.h + 4) + 'px sans-serif';
-      rctx.fillText(o.emoji, o.x, GROUND_Y);
+      rctx.fillText(o.emoji, o.x, oy + o.h);
 
       const px = player.x, py = player.y, pw = player.w, ph = player.h;
       if (px < o.x + o.w && px + pw > o.x && py < oy + o.h && py + ph > oy) {
