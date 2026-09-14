@@ -731,11 +731,13 @@
   </div>
   <p class="cabinet-desc">ミニゲームで貯めたトークンでガチャを回して、全30種の図鑑をコンプリートしよう！</p>
   <div class="ticket-display">🎫 所持トークン: <span id="ticket-count">5</span> 枚</div>
-  <p style="font-size:12px; color: var(--ink-dim); margin: -6px 0 14px 0;">🎰 みんなの総ガチャ回数: <span id="total-gacha-count">読み込み中...</span> 回</p>
+  <p style="font-size:12px; color: var(--ink-dim); margin: -6px 0 4px 0;">🎰 みんなの総ガチャ回数: <span id="total-gacha-count">読み込み中...</span> 回</p>
+  <p style="font-size:12px; color: var(--ink-dim); margin: 0 0 14px 0;">🙋 あなたの総ガチャ回数: <span id="my-gacha-count">0</span> 回</p>
   <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
     <button class="arcade-btn btn-gold" style="width:220px;" onclick="drawGacha(1)">1回引く (1枚)</button>
     <button class="arcade-btn btn-cyan" style="width:220px;" onclick="drawGacha(10)">10連ガチャ (10枚)</button>
-    <button class="arcade-btn btn-pink" style="width:220px;" onclick="drawGacha(30)">30連ガチャ (30枚)</button>
+    <button class="arcade-btn btn-pink" style="width:220px;" onclick="drawGacha(50)">50連ガチャ (50枚)</button>
+    <button class="arcade-btn btn-purple" style="width:220px;" onclick="drawGacha(100)">100連ガチャ (100枚)</button>
   </div>
   <div id="gacha-result" class="gacha-result-box" style="display:none;"></div>
 
@@ -822,6 +824,16 @@
     localStorage.setItem('minigameTickets', tickets);
     document.getElementById('ticket-count').innerText = tickets;
     document.getElementById('ticket-count-header').innerText = tickets;
+  }
+
+  // 自分の総ガチャ回数（端末に保存。ページ更新しても維持されます）
+  let myGachaCount = parseInt(localStorage.getItem('myGachaCount') || '0', 10);
+  document.getElementById('my-gacha-count').innerText = myGachaCount;
+
+  function addMyGachaCount(times) {
+    myGachaCount += times;
+    localStorage.setItem('myGachaCount', myGachaCount);
+    document.getElementById('my-gacha-count').innerText = myGachaCount;
   }
 
   // 開発者モード（隠しコマンドで有効化。ページ更新でリセットされます）
@@ -1097,9 +1109,9 @@
   function pickObstacleType(elapsed, allowSpecial, lastKind) {
     const pool = [];
     OBSTACLE_TYPES.forEach(t => {
-      if (t.kind === 'ground') pool.push({ t, weight: 5 });
-      else if (t.kind === 'fast' && elapsed >= 15 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 2 });
-      else if (t.kind === 'air' && elapsed >= 25 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 1.2 });
+      if (t.kind === 'ground') pool.push({ t, weight: 4 });
+      else if (t.kind === 'fast' && elapsed >= 10 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 4 });
+      else if (t.kind === 'air' && elapsed >= 22 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 1.5 });
     });
     const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
     let r = Math.random() * totalWeight;
@@ -1256,9 +1268,11 @@
     if (obstacleTimer > nextObstacleGap) {
       const thisGap = nextObstacleGap;
       obstacleTimer = 0;
-      nextObstacleGap = Math.max(32, 75 - runnerElapsed * 1.4 + Math.random() * 28);
+      const minGap = Math.max(20, 42 - runnerElapsed * 0.35);
+      const maxGap = Math.max(minGap + 18, 85 - runnerElapsed * 0.9);
+      nextObstacleGap = minGap + Math.random() * (maxGap - minGap);
       // 直前の間隔が狭かった時は車・ヘリを出さない（ジャンプが間に合うように）
-      const allowSpecial = thisGap >= 65;
+      const allowSpecial = thisGap >= 55;
       const type = pickObstacleType(runnerElapsed, allowSpecial, lastObstacleKind);
       lastObstacleKind = type.kind;
       if (type.kind === 'air') {
@@ -1267,7 +1281,7 @@
       } else if (type.kind === 'fast') {
         obstacles.push({ x: RUNNER_W, w: 28, h: 26 + Math.random() * 10, emoji: type.emoji, kind: 'fast', speedMult: 1.2 + Math.random() * 0.25 });
       } else {
-        obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji: type.emoji, kind: 'ground', speedMult: 1 });
+        obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji: type.emoji, kind: 'ground', speedMult: 0.9 + Math.random() * 0.3 });
       }
     }
     runnerSpeed = Math.min(8.5, 4.0 + runnerElapsed * 0.16);
@@ -1622,7 +1636,7 @@
     { no: 12, rarity: 'R',  emoji: '🍧', name: 'フローズンパイン' },
     { no: 13, rarity: 'R',  emoji: '🍊', name: '冷凍みかん' },
     { no: 14, rarity: 'R',  emoji: '🍿', name: '手作りポップコーン' },
-    { no: 15, rarity: 'R',  emoji: '🎫', name: '三角クジのハズレ券' },
+    { no: 15, rarity: 'R',  emoji: '🍫', name: 'ブラウニー' },
     { no: 16, rarity: 'R',  emoji: '🧽', name: '黒板消し' },
     { no: 17, rarity: 'R',  emoji: '🧋', name: 'タピオカ風ゼリー' },
     { no: 18, rarity: 'R',  emoji: '📝', name: '手書きPOP' },
@@ -1630,7 +1644,7 @@
     { no: 20, rarity: 'SR', emoji: '👕', name: '男塾Tシャツ' },
     { no: 21, rarity: 'SR', emoji: '📜', name: '秘伝のたれレシピ' },
     { no: 22, rarity: 'SR', emoji: '⭐', name: '文化祭限定シール' },
-    { no: 23, rarity: 'SR', emoji: '🎆', name: '打ち上げ花火の余韻' },
+    { no: 23, rarity: 'SR', emoji: '🧴', name: '空のハンドソープ' },
     { no: 24, rarity: 'SR', emoji: '🪭', name: '伝説のうちわ' },
     { no: 25, rarity: 'SSR', emoji: '🌟', name: '伝説の暇人' },
     { no: 26, rarity: 'SSR', emoji: '💫', name: '暇を極めし者' },
@@ -1808,6 +1822,7 @@
       return;
     }
     updateTickets(-times);
+    addMyGachaCount(times);
     if (gachaCountRef) {
       gachaCountRef.transaction((current) => (current || 0) + times);
     }
