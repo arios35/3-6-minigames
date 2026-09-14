@@ -518,6 +518,29 @@
     color: var(--ink-dim);
     margin-top: 4px;
   }
+  .board-reply-link {
+    color: var(--cyan);
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .board-post-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .board-action-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: var(--ink-dim);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .board-delete-btn {
+    border-color: var(--pink);
+    color: var(--pink);
+  }
 </style>
 </head>
 <body>
@@ -613,7 +636,7 @@
   </div>
   <p class="runner-hint" id="runner-hint">スタートを押して開始、その後はボタンでジャンプ！</p>
 
-  <button id="runner-action-btn" class="arcade-btn btn-orange" style="width:100%; margin-top:10px;" onclick="runnerActionButton()">スタート！！</button>
+  <button id="runner-action-btn" class="arcade-btn btn-orange" style="width:100%; margin-top:10px; height:70px; font-size:22px;" onclick="runnerActionButton()">スタート！！</button>
   <div class="result-line" id="runner-result"></div>
 
   <div class="runner-name-form" id="runner-name-form">
@@ -640,6 +663,7 @@
   <div class="ticket-display">🎫 所持トークン: <span id="ticket-count">5</span> 枚</div>
   <button class="arcade-btn btn-gold" onclick="drawGacha(1)">1回引く (1枚)</button>
   <button class="arcade-btn btn-gold" style="margin-left:6px;" onclick="drawGacha(10)">10連ガチャ (10枚)</button>
+  <button class="arcade-btn btn-gold" style="margin-left:6px; margin-top:6px;" onclick="drawGacha(30)">30連ガチャ (30枚)</button>
   <div id="gacha-result" class="gacha-result-box" style="display:none;"></div>
 
   <div class="rarity-legend">
@@ -711,6 +735,9 @@
     document.getElementById('ticket-count').innerText = tickets;
     document.getElementById('ticket-count-header').innerText = tickets;
   }
+
+  // 開発者モード（隠しコマンドで有効化。一度有効化すると端末に保存され続きます）
+  let isDevMode = (localStorage.getItem('minigameDevMode') === 'true');
 
   // ============================================================
   // 連打チャレンジ
@@ -889,11 +916,14 @@
     if (rawValue === '01203535') {
       numberGameActive = false;
       updateTickets(1000);
+      isDevMode = true;
+      localStorage.setItem('minigameDevMode', 'true');
       document.getElementById('number-feedback').innerText = '🛠️ 開発者コード認証！';
-      document.getElementById('number-result').innerHTML = '🎉 隠しコマンド成功！<br>🎫 トークンを1000枚GET！';
+      document.getElementById('number-result').innerHTML = '🎉 隠しコマンド成功！<br>🎫 トークンを1000枚GET！<br>🗑️ 掲示板の削除権限が付与されました！';
       document.getElementById('number-input').disabled = true;
       document.getElementById('number-guess-btn').disabled = true;
       input.value = '';
+      renderBoard();
       return;
     }
 
@@ -1358,9 +1388,16 @@
       const resNum = post.resNum;
       const date = post.ts ? new Date(post.ts) : null;
       const timeStr = date ? `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` : '';
-      return `<div class="board-post">
+      const deleteBtn = isDevMode
+        ? `<button class="board-action-btn board-delete-btn" onclick="deleteBoardPost('${post.key}')">🗑️ 削除</button>`
+        : '';
+      return `<div class="board-post" id="board-post-${resNum}">
         <div class="board-post-name">${resNum} ： ${escapeHtml(post.name || '名無しの暇人')}　<span class="board-post-time">${timeStr}</span></div>
-        <div class="board-post-text">${escapeHtml(post.text || '')}</div>
+        <div class="board-post-text">${linkifyBoardText(post.text || '')}</div>
+        <div class="board-post-actions">
+          <button class="board-action-btn" onclick="replyToBoardPost(${resNum})">↩ 返信</button>
+          ${deleteBtn}
+        </div>
       </div>`;
     }).join('');
 
@@ -1385,6 +1422,43 @@
   function goToBoardLatestPage() {
     boardCurrentPage = null;
     renderBoard();
+  }
+
+  function linkifyBoardText(text) {
+    const escaped = escapeHtml(text);
+    return escaped.replace(/&gt;&gt;(\d+)/g, (match, num) =>
+      `<a href="#" class="board-reply-link" onclick="jumpToBoardPost(${num}); return false;">&gt;&gt;${num}</a>`
+    );
+  }
+
+  function replyToBoardPost(num) {
+    const textInput = document.getElementById('board-text-input');
+    textInput.value = `>>${num} ` + textInput.value;
+    textInput.focus();
+    textInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function jumpToBoardPost(num) {
+    const targetPage = Math.max(1, Math.ceil(num / BOARD_PAGE_SIZE));
+    if (boardCurrentPage !== targetPage) {
+      boardCurrentPage = targetPage;
+      renderBoard();
+    }
+    setTimeout(() => {
+      const el = document.getElementById('board-post-' + num);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.outline = '2px solid var(--gold)';
+        setTimeout(() => { el.style.outline = 'none'; }, 1500);
+      }
+    }, 50);
+  }
+
+  function deleteBoardPost(key) {
+    if (!isDevMode) return;
+    if (!confirm('この投稿を削除しますか？（元に戻せません）')) return;
+    if (!boardRef) return;
+    boardRef.child(key).remove();
   }
 
   function submitBoardPost() {
