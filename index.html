@@ -6,7 +6,7 @@
 <title>3-6 ミニゲーム部屋</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Cinzel:wght@600;900&display=swap" rel="stylesheet">
 
 <!-- ランキング機能用（Firebase Realtime Database） -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -324,6 +324,9 @@
     min-height: 40px;
   }
   .rarity-omega { color: #ffff00; font-weight: bold; font-size: 16px; text-shadow: 0 0 12px #ffff00; white-space: nowrap; margin: 5px 0; }
+  .rarity-omegaplus { color: #ff8800; font-weight: bold; font-size: 17px; text-shadow: 0 0 14px #ff8800; white-space: nowrap; margin: 5px 0; }
+  .rarity-god { color: #ff2b2b; font-weight: bold; font-size: 18px; text-shadow: 0 0 16px #ff2b2b, 0 0 26px #ffffff; white-space: nowrap; margin: 6px 0; }
+  .rarity-xerr { color: #ff0000; font-weight: 900; font-size: 19px; text-shadow: 0 0 4px #000, 0 0 18px #8b0000; white-space: nowrap; margin: 6px 0; letter-spacing: 1px; }
   .rarity-ur    { color: #ff3366; font-weight: bold; font-size: 15px; text-shadow: 0 0 8px #ff3366; white-space: nowrap; margin: 4px 0; }
   .rarity-ssr   { color: #00ffff; font-weight: bold; font-size: 14px; margin: 3px 0; }
   .rarity-sr    { color: #e040fb; font-weight: bold; font-size: 14px; margin: 2px 0; }
@@ -473,6 +476,73 @@
     0% { transform: scale(1); filter: drop-shadow(0 0 15px #ffff00); }
     50% { transform: scale(1.15); filter: drop-shadow(0 0 35px #ff0000); }
     100% { transform: scale(1); filter: drop-shadow(0 0 15px #ffff00); }
+  }
+
+  /* === X-ERR：派手さより「赤黒く美しい」異質な演出 === */
+  #cutin-overlay.xerr-active {
+    background: radial-gradient(circle at center, rgba(60,0,0,0.55) 0%, rgba(0,0,0,0.96) 78%);
+  }
+  #xerr-aura {
+    display: none;
+    position: fixed; top: 50%; left: 50%;
+    width: 140vmax; height: 140vmax;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(139,0,0,0.4) 0%, rgba(139,0,0,0) 62%);
+    z-index: 9997;
+    animation: xerr-pulse 3.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes xerr-pulse {
+    0%, 100% { opacity: 0.45; transform: translate(-50%, -50%) scale(1); }
+    50%      { opacity: 0.85; transform: translate(-50%, -50%) scale(1.08); }
+  }
+  #xerr-crack {
+    display: none;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 9997; pointer-events: none;
+    background:
+      linear-gradient(105deg, transparent 48%, rgba(139,0,0,0.5) 49%, rgba(139,0,0,0.5) 50%, transparent 51%),
+      linear-gradient(15deg, transparent 68%, rgba(139,0,0,0.35) 69%, rgba(139,0,0,0.35) 70%, transparent 71%);
+    opacity: 0.6;
+    animation: xerr-flicker 4s ease-in-out infinite;
+  }
+  @keyframes xerr-flicker {
+    0%, 92%, 100% { opacity: 0.5; }
+    94% { opacity: 0.15; }
+    96% { opacity: 0.7; }
+  }
+  #xerr-embers {
+    display: none;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 9998; pointer-events: none; overflow: hidden;
+  }
+  .xerr-ember {
+    position: absolute;
+    bottom: -10px;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: #ff2b2b;
+    box-shadow: 0 0 8px #ff2b2b, 0 0 2px #fff;
+    animation: xerr-float 7s linear infinite;
+  }
+  @keyframes xerr-float {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    10%  { opacity: 0.85; }
+    100% { transform: translateY(-115vh) translateX(15px); opacity: 0; }
+  }
+  #cutin-main-title.xerr-title {
+    font-family: 'Cinzel', serif;
+    font-size: 40px;
+    letter-spacing: 2px;
+    background: linear-gradient(180deg, #ff5252 0%, #8b0000 55%, #200000 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1.5px #000000;
+    filter: drop-shadow(0 0 14px rgba(139,0,0,0.9));
+    animation: xerr-title-pulse 3.2s ease-in-out infinite;
+  }
+  @keyframes xerr-title-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.035); }
   }
 
   .board-form textarea {
@@ -661,20 +731,24 @@
   </div>
   <p class="cabinet-desc">ミニゲームで貯めたトークンでガチャを回して、全30種の図鑑をコンプリートしよう！</p>
   <div class="ticket-display">🎫 所持トークン: <span id="ticket-count">5</span> 枚</div>
+  <p style="font-size:12px; color: var(--ink-dim); margin: -6px 0 14px 0;">🎰 みんなの総ガチャ回数: <span id="total-gacha-count">読み込み中...</span> 回</p>
   <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
     <button class="arcade-btn btn-gold" style="width:220px;" onclick="drawGacha(1)">1回引く (1枚)</button>
-    <button class="arcade-btn btn-gold" style="width:220px;" onclick="drawGacha(10)">10連ガチャ (10枚)</button>
-    <button class="arcade-btn btn-gold" style="width:220px;" onclick="drawGacha(30)">30連ガチャ (30枚)</button>
+    <button class="arcade-btn btn-cyan" style="width:220px;" onclick="drawGacha(10)">10連ガチャ (10枚)</button>
+    <button class="arcade-btn btn-pink" style="width:220px;" onclick="drawGacha(30)">30連ガチャ (30枚)</button>
   </div>
   <div id="gacha-result" class="gacha-result-box" style="display:none;"></div>
 
   <div class="rarity-legend">
-    <span class="rarity-n">N 53.89%</span>
+    <span class="rarity-n">N 53.8829%</span>
     <span class="rarity-r">R 35%</span>
     <span class="rarity-sr">SR 9%</span>
     <span class="rarity-ssr">SSR 2%</span>
     <span class="rarity-ur">UR 0.1%</span>
     <span class="rarity-omega">Ω 0.01%</span>
+    <span class="rarity-omegaplus">Ω+ 0.006%</span>
+    <span class="rarity-god">GOD 0.001%</span>
+    <span class="rarity-xerr">X-ERR 0.0001%</span>
   </div>
 
   <button class="arcade-btn btn-gold album-toggle-btn" onclick="toggleAlbum()" id="album-toggle-btn">📖 図鑑を見る</button>
@@ -713,6 +787,18 @@
   <div id="god-rays-2"></div>
   <div id="god-rings"><div class="god-ring"></div><div class="god-ring"></div><div class="god-ring"></div></div>
   <div id="god-strobe"></div>
+  <div id="xerr-aura"></div>
+  <div id="xerr-crack"></div>
+  <div id="xerr-embers">
+    <div class="xerr-ember" style="left:8%; animation-delay:0s;"></div>
+    <div class="xerr-ember" style="left:18%; animation-delay:0.8s;"></div>
+    <div class="xerr-ember" style="left:30%; animation-delay:1.6s;"></div>
+    <div class="xerr-ember" style="left:44%; animation-delay:0.4s;"></div>
+    <div class="xerr-ember" style="left:58%; animation-delay:2.2s;"></div>
+    <div class="xerr-ember" style="left:70%; animation-delay:1.1s;"></div>
+    <div class="xerr-ember" style="left:82%; animation-delay:2.8s;"></div>
+    <div class="xerr-ember" style="left:92%; animation-delay:0.6s;"></div>
+  </div>
   <div class="cutin-content">
     <p id="cutin-sub-title" class="cutin-text-panel" style="font-size:26px; color:#fff; margin:0; font-weight:900; text-shadow:0 0 10px #000;">🎉🎉🎉 奇跡降臨 🎉🎉🎉</p>
     <h2 id="cutin-main-title">🌌 Ω お前は一体何者なんだ 🌌</h2>
@@ -738,8 +824,8 @@
     document.getElementById('ticket-count-header').innerText = tickets;
   }
 
-  // 開発者モード（隠しコマンドで有効化。一度有効化すると端末に保存され続きます）
-  let isDevMode = (localStorage.getItem('minigameDevMode') === 'true');
+  // 開発者モード（隠しコマンドで有効化。ページ更新でリセットされます）
+  let isDevMode = false;
 
   // ============================================================
   // 連打チャレンジ
@@ -896,8 +982,36 @@
   let secretNumber = 0;
   let guessAttempts = 0;
   let numberGameActive = false;
+  let numberGameHasStarted = false;
+  let numberGameWasWon = false;
+  let numberResetPenaltyCount = 0;
+  let numberCooldownUntil = 0;
 
   function startNumberGame() {
+    const now = Date.now();
+
+    if (now < numberCooldownUntil) {
+      const remain = Math.ceil((numberCooldownUntil - now) / 1000);
+      document.getElementById('number-feedback').innerText = `⏳ リセマラ防止クールダウン中…あと${remain}秒！`;
+      return;
+    }
+
+    // 前回のラウンドを「正解せずに」リセットした場合はペナルティ（1回目:30秒 / 2回目:20秒 / 3回目以降:10秒）
+    if (numberGameHasStarted && numberGameActive && !numberGameWasWon) {
+      numberResetPenaltyCount++;
+      const cooldownSec = numberResetPenaltyCount === 1 ? 30 : (numberResetPenaltyCount === 2 ? 20 : 10);
+      numberCooldownUntil = now + cooldownSec * 1000;
+      numberGameActive = false;
+      document.getElementById('number-feedback').innerText = `⏳ リセマラ防止のため、${cooldownSec}秒間プレイできません！`;
+      document.getElementById('number-result').innerText = '';
+      document.getElementById('number-input').disabled = true;
+      document.getElementById('number-guess-btn').disabled = true;
+      return;
+    }
+
+    numberResetPenaltyCount = 0;
+    numberGameHasStarted = true;
+    numberGameWasWon = false;
     secretNumber = Math.floor(Math.random() * 100) + 1;
     guessAttempts = 0;
     numberGameActive = true;
@@ -919,7 +1033,6 @@
       numberGameActive = false;
       updateTickets(1000);
       isDevMode = true;
-      localStorage.setItem('minigameDevMode', 'true');
       document.getElementById('number-feedback').innerText = '🛠️ 開発者コード認証！';
       document.getElementById('number-result').innerHTML = '🎉 隠しコマンド成功！<br>🎫 トークンを1000枚GET！<br>🗑️ 掲示板の削除権限が付与されました！';
       document.getElementById('number-input').disabled = true;
@@ -938,6 +1051,7 @@
 
     if (guess === secretNumber) {
       numberGameActive = false;
+      numberGameWasWon = true;
       const reward = Math.max(2, Math.floor(300 / Math.pow(2, guessAttempts - 1)));
       updateTickets(reward);
       document.getElementById('number-feedback').innerText = `🎉 正解！答えは${secretNumber}でした！`;
@@ -1245,6 +1359,7 @@
   let reactionLeaderboardRef = null;
   let currentBoardPosts = [];
   let boardRef = null;
+  let gachaCountRef = null;
 
   try {
     firebase.initializeApp(firebaseConfig);
@@ -1269,6 +1384,12 @@
     });
     visitsRef.transaction((current) => (current || 0) + 1);
 
+    // 総ガチャ回数（全員の画面にリアルタイム反映。何が出たかは記録しません）
+    gachaCountRef = firebase.database().ref('minigameGachaCount');
+    gachaCountRef.on('value', (snap) => {
+      document.getElementById('total-gacha-count').innerText = snap.val() || 0;
+    });
+
     // 意見箱・掲示板
     boardRef = firebase.database().ref('minigameBoard');
     boardRef.on('value', (snap) => {
@@ -1285,6 +1406,7 @@
     document.getElementById('board-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">掲示板機能は準備中です。</p>';
     document.getElementById('total-visits').innerText = '準備中';
+    document.getElementById('total-gacha-count').innerText = '準備中';
   }
 
   function escapeHtml(str) {
@@ -1530,10 +1652,20 @@
     { no: 42, rarity: 'R', emoji: '📲', name: 'abceed' },
     { no: 43, rarity: 'N', emoji: '📓', name: 'ロイロノート' },
     { no: 44, rarity: 'N', emoji: '☂️', name: '誰かの傘' },
-    { no: 45, rarity: 'N', emoji: '📱', name: 'スマホ' }
+    { no: 45, rarity: 'N', emoji: '📱', name: 'スマホ' },
+    { no: 46, rarity: 'X-ERR', emoji: '🩸', name: '規格外異変' },
+    { no: 47, rarity: 'X-ERR', emoji: '🕳️', name: '終焉の特異点' },
+    { no: 48, rarity: 'GOD', emoji: '👑', name: '暇人の神' },
+    { no: 49, rarity: 'GOD', emoji: '🔱', name: '柏井の超神格' },
+    { no: 50, rarity: 'GOD', emoji: '🎭', name: '逸般人' },
+    { no: 51, rarity: 'Ω+', emoji: '🍚', name: 'チーズ牛丼' },
+    { no: 52, rarity: 'Ω+', emoji: '🤓', name: 'おっほーい' },
+    { no: 53, rarity: 'Ω+', emoji: '👨\u200d🦱', name: 'やるねェ' },
+    { no: 54, rarity: 'SR', emoji: '🤖', name: '高性能ロボ' },
+    { no: 55, rarity: 'N', emoji: '🎤', name: '無能マイク' }
   ];
-  const RARITY_LEVEL = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4, 'Ω': 5 };
-  const RARITY_CLASS = { N: 'rarity-n', R: 'rarity-r', SR: 'rarity-sr', SSR: 'rarity-ssr', UR: 'rarity-ur', 'Ω': 'rarity-omega' };
+  const RARITY_LEVEL = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4, 'Ω': 5, 'Ω+': 6, GOD: 7, 'X-ERR': 8 };
+  const RARITY_CLASS = { N: 'rarity-n', R: 'rarity-r', SR: 'rarity-sr', SSR: 'rarity-ssr', UR: 'rarity-ur', 'Ω': 'rarity-omega', 'Ω+': 'rarity-omegaplus', GOD: 'rarity-god', 'X-ERR': 'rarity-xerr' };
 
   // ============================================================
   // 図鑑（所持カード）：localStorageで永続化。ページ移動・更新しても消えません。
@@ -1551,8 +1683,8 @@
 
   // レアリティの表示順と色。CARDSに新しいカードを追加するだけで
   // 図鑑・確率計算・演出すべてに自動で反映されます。
-  const RARITY_ORDER = ['N', 'R', 'SR', 'SSR', 'UR', 'Ω'];
-  const RARITY_COLOR = { N: '#ffffff', R: '#00e676', SR: '#e040fb', SSR: '#00ffff', UR: '#ff3366', 'Ω': '#ffff00' };
+  const RARITY_ORDER = ['N', 'R', 'SR', 'SSR', 'UR', 'Ω', 'Ω+', 'GOD', 'X-ERR'];
+  const RARITY_COLOR = { N: '#ffffff', R: '#00e676', SR: '#e040fb', SSR: '#00ffff', UR: '#ff3366', 'Ω': '#ffff00', 'Ω+': '#ff8800', GOD: '#ff2b2b', 'X-ERR': '#8b0000' };
 
   function renderAlbum() {
     const grid = document.getElementById('album-grid');
@@ -1606,12 +1738,27 @@
 
   function pickCardByRand(rand) {
     let rarity;
-    if (rand < 0.01) rarity = 'Ω';
-    else if (rand < 0.11) rarity = 'UR';
-    else if (rand < 2.11) rarity = 'SSR';
-    else if (rand < 11.11) rarity = 'SR';
-    else if (rand < 46.11) rarity = 'R';
+    if (rand < 0.0001) rarity = 'X-ERR';
+    else if (rand < 0.0011) rarity = 'GOD';
+    else if (rand < 0.0071) rarity = 'Ω+';
+    else if (rand < 0.0171) rarity = 'Ω';
+    else if (rand < 0.1171) rarity = 'UR';
+    else if (rand < 2.1171) rarity = 'SSR';
+    else if (rand < 11.1171) rarity = 'SR';
+    else if (rand < 46.1171) rarity = 'R';
     else rarity = 'N';
+    const pool = CARDS.filter(c => c.rarity === rarity);
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  // 開発者モード専用：Ω以上（Ω / Ω+ / GOD / X-ERR）のみが出る抽選
+  // 元の確率比（0.01 / 0.006 / 0.001 / 0.0001）を保ったまま100%に正規化
+  function pickCardByRandDevMode(rand) {
+    let rarity;
+    if (rand < 0.58) rarity = 'X-ERR';
+    else if (rand < 6.43) rarity = 'GOD';
+    else if (rand < 41.52) rarity = 'Ω+';
+    else rarity = 'Ω';
     const pool = CARDS.filter(c => c.rarity === rarity);
     return pool[Math.floor(Math.random() * pool.length)];
   }
@@ -1622,14 +1769,33 @@
     const rays2 = document.getElementById('god-rays-2');
     const rings = document.getElementById('god-rings');
     const strobe = document.getElementById('god-strobe');
+    const title = document.getElementById('cutin-main-title');
     if (on) {
       overlay.classList.add('god-active');
       rays.style.display = 'block'; rays2.style.display = 'block';
       rings.style.display = 'block'; strobe.style.display = 'block';
+      title.classList.remove('xerr-title');
     } else {
       overlay.classList.remove('god-active');
       rays.style.display = 'none'; rays2.style.display = 'none';
       rings.style.display = 'none'; strobe.style.display = 'none';
+    }
+  }
+
+  function setXerrEffects(on) {
+    const overlay = document.getElementById('cutin-overlay');
+    const aura = document.getElementById('xerr-aura');
+    const crack = document.getElementById('xerr-crack');
+    const embers = document.getElementById('xerr-embers');
+    const title = document.getElementById('cutin-main-title');
+    if (on) {
+      overlay.classList.add('xerr-active');
+      aura.style.display = 'block'; crack.style.display = 'block'; embers.style.display = 'block';
+      title.classList.add('xerr-title');
+    } else {
+      overlay.classList.remove('xerr-active');
+      aura.style.display = 'none'; crack.style.display = 'none'; embers.style.display = 'none';
+      title.classList.remove('xerr-title');
     }
   }
 
@@ -1642,19 +1808,22 @@
       return;
     }
     updateTickets(-times);
+    if (gachaCountRef) {
+      gachaCountRef.transaction((current) => (current || 0) + times);
+    }
 
     const resultDiv = document.getElementById('gacha-result');
     resultDiv.style.display = "block";
     resultDiv.innerHTML = "🎰 ガチャを回中... 🎰";
 
     let maxLevel = -1;
-    let specialMsg = "";
+    let topCard = null;
     let resultsHtml = "";
 
     setTimeout(() => {
       for (let i = 0; i < times; i++) {
         const rand = Math.random() * 100;
-        const card = pickCardByRand(rand);
+        const card = isDevMode ? pickCardByRandDevMode(rand) : pickCardByRand(rand);
         const isNew = !ownedCards[card.no];
         ownedCards[card.no] = true;
 
@@ -1665,10 +1834,7 @@
         const level = RARITY_LEVEL[card.rarity];
         if (level > maxLevel) {
           maxLevel = level;
-          if (level === 5) specialMsg = `😱😱【神引き】最高レアΩ『${card.name}』が降臨！！！😱😱`;
-          else if (level === 4) specialMsg = `🔥🔥【激レア】UR『${card.name}』を獲得！！🔥🔥`;
-          else if (level === 3) specialMsg = `✨【大当り】SSR『${card.name}』が出ました！！✨`;
-          else if (level === 2) specialMsg = `🎉【当たり】SR『${card.name}』ゲット！🎉`;
+          topCard = card;
         }
       }
 
@@ -1676,26 +1842,49 @@
       renderAlbum();
       resultDiv.innerHTML = resultsHtml;
 
-      if (maxLevel === 5) {
+      if (maxLevel === 8) {
+        // X-ERR：派手さより、赤黒く美しい異質な演出
+        setGodEffects(false);
+        document.getElementById('cutin-sub-title').innerText = "⚠ 規格外の異変を検知 ⚠";
+        document.getElementById('cutin-main-title').innerText = `${topCard.emoji} X-ERR ${topCard.name}`;
+        document.getElementById('cutin-desc').innerText = "【0.0001%】この世界の外側から、何かが来た。";
+        setXerrEffects(true);
+        document.getElementById('cutin-overlay').style.display = 'flex';
+        cutinLockUntil = Date.now() + CUTIN_LOCK_MS;
+      } else if (maxLevel === 7) {
+        setXerrEffects(false);
         document.getElementById('cutin-sub-title').innerText = "🎉🎉🎉 奇跡降臨 🎉🎉🎉";
-        document.getElementById('cutin-main-title').innerText = "🌌 Ω お前は一体何者なんだ 🌌";
-        document.getElementById('cutin-desc').innerText = "【0.01%】最高レアリティが降臨！！";
+        document.getElementById('cutin-main-title').innerText = `${topCard.emoji} GOD ${topCard.name}`;
+        document.getElementById('cutin-desc').innerText = "【0.001%】神の領域に到達！！";
+        setGodEffects(true);
+        document.getElementById('cutin-overlay').style.display = 'flex';
+        cutinLockUntil = Date.now() + CUTIN_LOCK_MS;
+      } else if (maxLevel === 6) {
+        setXerrEffects(false);
+        document.getElementById('cutin-sub-title').innerText = "🌟🌟🌟 限界突破 🌟🌟🌟";
+        document.getElementById('cutin-main-title').innerText = `${topCard.emoji} Ω+ ${topCard.name}`;
+        document.getElementById('cutin-desc').innerText = "【0.006%】Ωを超えた存在！！";
+        setGodEffects(true);
+        document.getElementById('cutin-overlay').style.display = 'flex';
+        cutinLockUntil = Date.now() + CUTIN_LOCK_MS;
+      } else if (maxLevel === 5) {
+        setXerrEffects(false);
+        document.getElementById('cutin-sub-title').innerText = "😱😱 神引き 😱😱";
+        document.getElementById('cutin-main-title').innerText = `${topCard.emoji} Ω ${topCard.name}`;
+        document.getElementById('cutin-desc').innerText = "【0.01%】最高峰レアリティ降臨！！";
         setGodEffects(true);
         document.getElementById('cutin-overlay').style.display = 'flex';
         cutinLockUntil = Date.now() + CUTIN_LOCK_MS;
       } else if (maxLevel === 4) {
         setGodEffects(false);
+        setXerrEffects(false);
         document.getElementById('cutin-sub-title').innerText = "🌟🌟🌟 激レア降臨 🌟🌟🌟";
-        document.getElementById('cutin-main-title').innerText = "⚡ UR 獲得！ ⚡";
+        document.getElementById('cutin-main-title').innerText = `⚡ UR ${topCard.name} ⚡`;
         document.getElementById('cutin-desc').innerText = "【0.1%】激レアリティを獲得！！";
         document.getElementById('cutin-overlay').style.display = 'flex';
         cutinLockUntil = Date.now() + CUTIN_LOCK_MS;
-      } else if (maxLevel === 3) {
-        document.body.classList.add('omega-bg');
-        alert(specialMsg);
-        setTimeout(() => { document.body.classList.remove('omega-bg'); }, 8000);
       }
-      // SR(maxLevel === 2)以下は特別な演出なし。結果一覧にだけ表示されます。
+      // SSR(3)以下は特別な演出なし。結果一覧にだけ表示されます。
     }, 500);
   }
 
@@ -1703,6 +1892,7 @@
     if (Date.now() < cutinLockUntil) return;
     document.getElementById('cutin-overlay').style.display = 'none';
     setGodEffects(false);
+    setXerrEffects(false);
   }
 </script>
 
