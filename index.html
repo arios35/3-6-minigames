@@ -1346,12 +1346,16 @@
     if (boardCurrentPage < 1) boardCurrentPage = 1;
 
     const startIdx = (boardCurrentPage - 1) * BOARD_PAGE_SIZE;
-    const pagePosts = sorted.slice(startIdx, startIdx + BOARD_PAGE_SIZE);
+    const pagePosts = sorted.slice(startIdx, startIdx + BOARD_PAGE_SIZE)
+      .map((post, idx) => ({ ...post, resNum: startIdx + idx + 1 }));
 
     pageInfo.innerText = `全${sorted.length}件中 ${startIdx + 1}〜${startIdx + pagePosts.length}件目（${boardCurrentPage}/${totalPages}ページ）`;
 
-    list.innerHTML = pagePosts.map((post, idx) => {
-      const resNum = startIdx + idx + 1;
+    // 通し番号（レス番号）は投稿順のまま、表示だけ新しい順（上が最新）にする
+    const displayPosts = [...pagePosts].reverse();
+
+    list.innerHTML = displayPosts.map((post) => {
+      const resNum = post.resNum;
       const date = post.ts ? new Date(post.ts) : null;
       const timeStr = date ? `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` : '';
       return `<div class="board-post">
