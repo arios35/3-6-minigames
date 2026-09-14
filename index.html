@@ -661,9 +661,11 @@
   </div>
   <p class="cabinet-desc">ミニゲームで貯めたトークンでガチャを回して、全30種の図鑑をコンプリートしよう！</p>
   <div class="ticket-display">🎫 所持トークン: <span id="ticket-count">5</span> 枚</div>
-  <button class="arcade-btn btn-gold" onclick="drawGacha(1)">1回引く (1枚)</button>
-  <button class="arcade-btn btn-gold" style="margin-left:6px;" onclick="drawGacha(10)">10連ガチャ (10枚)</button>
-  <button class="arcade-btn btn-gold" style="margin-left:6px; margin-top:6px;" onclick="drawGacha(30)">30連ガチャ (30枚)</button>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+    <button class="arcade-btn btn-gold" style="width:220px;" onclick="drawGacha(1)">1回引く (1枚)</button>
+    <button class="arcade-btn btn-gold" style="width:220px;" onclick="drawGacha(10)">10連ガチャ (10枚)</button>
+    <button class="arcade-btn btn-gold" style="width:220px;" onclick="drawGacha(30)">30連ガチャ (30枚)</button>
+  </div>
   <div id="gacha-result" class="gacha-result-box" style="display:none;"></div>
 
   <div class="rarity-legend">
@@ -829,7 +831,7 @@
       if (reactionRoundIndex >= REACTION_ROUNDS) {
         finishReactionChallenge();
       } else {
-        pad.style.background = '#4a4a55';
+        pad.style.background = '';
         pad.innerText = `${reactionMs}ms！ タップして次のラウンドへ (${reactionRoundIndex}/${REACTION_ROUNDS})`;
         reactionState = 'next';
       }
@@ -855,7 +857,7 @@
   function finishReactionChallenge() {
     const pad = document.getElementById('reaction-pad');
     const avg = Math.round(reactionTimes.reduce((a,b) => a+b, 0) / reactionTimes.length);
-    pad.style.background = '#4a4a55';
+    pad.style.background = '';
     pad.innerText = "タップしてもう一度チャレンジ";
     reactionState = 'idle';
 
