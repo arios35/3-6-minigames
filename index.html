@@ -21,6 +21,7 @@
     --purple: #b388ff;
     --orange: #ff8a3d;
     --gold: #ffd23f;
+    --green: #2be07a;
     --ink: #f4eefc;
     --ink-dim: #b9a9d6;
   }
@@ -154,6 +155,7 @@
   .cab-purple { border-color: var(--purple); box-shadow: 0 0 18px rgba(179,136,255,0.25); }
   .cab-orange { border-color: var(--orange); box-shadow: 0 0 18px rgba(255,138,61,0.25); max-width: 460px; }
   .cab-gold   { border-color: var(--gold);   box-shadow: 0 0 18px rgba(255,210,63,0.25); }
+  .cab-green  { border-color: var(--green);  box-shadow: 0 0 18px rgba(43,224,122,0.25); }
 
   .arcade-btn {
     border: none;
@@ -173,6 +175,7 @@
   .btn-purple { background: var(--purple); }
   .btn-orange { background: var(--orange); }
   .btn-gold   { background: var(--gold); }
+  .btn-green  { background: var(--green); }
 
   .status-row {
     display: flex;
@@ -225,6 +228,43 @@
   .reaction-pad.wait  { background: #a13a3a; }
   .reaction-pad.go    { background: #1f9d55; }
   .reaction-pad.early { background: #ff8c1a; color: #1a0a2b; }
+
+  /* じゃんけん対決 */
+  .janken-screen {
+    width: 100%;
+    height: 150px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0620;
+    border: 2px solid rgba(43,224,122,0.4);
+    cursor: pointer;
+    user-select: none;
+    margin-top: 6px;
+  }
+  .janken-screen p {
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--ink);
+    text-align: center;
+  }
+  .janken-screen.countdown p {
+    font-size: 26px;
+    color: var(--gold);
+    animation: janken-countdown-pulse 0.5s ease-in-out infinite;
+  }
+  @keyframes janken-countdown-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  .janken-screen.reveal p {
+    font-size: 64px;
+  }
+  .janken-hand-btn:disabled {
+    opacity: 0.35;
+  }
 
   /* 数当てゲーム */
   .number-input-row {
@@ -615,8 +655,6 @@
 </head>
 <body>
 
-<a href="https://arios35.github.io/bunkasai/" class="back-link">⟵ 3年6組ページに戻る</a>
-
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
@@ -667,6 +705,44 @@
   <div class="leaderboard">
     <p class="leaderboard-title" style="color: var(--cyan);">🏆 ランキング TOP5（平均反応速度）</p>
     <div id="reaction-leaderboard-list">
+      <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
+    </div>
+  </div>
+</div>
+
+<!-- 筐体：じゃんけん対決 -->
+<div class="cabinet cab-green">
+  <div class="cabinet-header">
+    <span class="cabinet-icon">✊</span>
+    <p class="cabinet-title">じゃんけん対決</p>
+  </div>
+  <p class="cabinet-desc">画面をタップして開始！「じゃんけん…」「あいこで…」の掛け声中（1.5秒）は手を出せません。勝つたび連勝数ぶんのトークンGET（最大15枚）。</p>
+
+  <div class="status-row">
+    <span id="janken-streak">連勝数: 0</span>
+    <span id="janken-best">自己ベスト: 0連勝</span>
+  </div>
+
+  <div class="janken-screen" id="janken-screen" onclick="jankenScreenTap()">
+    <p id="janken-screen-text">タップしてスタート</p>
+  </div>
+
+  <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
+    <button class="arcade-btn btn-green janken-hand-btn" id="janken-btn-rock" style="font-size:28px; padding:16px 20px;" onclick="playJanken('rock')" disabled>✊</button>
+    <button class="arcade-btn btn-green janken-hand-btn" id="janken-btn-scissors" style="font-size:28px; padding:16px 20px;" onclick="playJanken('scissors')" disabled>✌️</button>
+    <button class="arcade-btn btn-green janken-hand-btn" id="janken-btn-paper" style="font-size:28px; padding:16px 20px;" onclick="playJanken('paper')" disabled>🖐️</button>
+  </div>
+  <div class="result-line" id="janken-result"></div>
+
+  <div class="runner-name-form" id="janken-name-form">
+    <p style="font-size:13px; font-weight:bold; color: var(--gold); margin:0 0 8px 0;">🎉 ランキング入り目前！なまえを入力してね</p>
+    <input type="text" id="janken-name-input" maxlength="10" placeholder="なまえ（10文字まで）">
+    <button class="arcade-btn btn-green" onclick="submitJankenScore()">送信</button>
+  </div>
+
+  <div class="leaderboard">
+    <p class="leaderboard-title" style="color: var(--green);">🏆 ランキング TOP5（最高連勝数）</p>
+    <div id="janken-leaderboard-list">
       <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
     </div>
   </div>
@@ -989,6 +1065,114 @@
   }
 
   // ============================================================
+  // じゃんけん対決
+  // ============================================================
+  let jankenStreak = 0;
+  let pendingJankenScore = 0;
+  let jankenBest = parseInt(localStorage.getItem('jankenBest') || '0', 10);
+  document.getElementById('janken-best').innerText = `自己ベスト: ${jankenBest}連勝`;
+
+  const JANKEN_OPTIONS = ['rock', 'scissors', 'paper'];
+  const JANKEN_EMOJI = { rock: '✊', scissors: '✌️', paper: '🖐️' };
+  const JANKEN_LABEL = { rock: '✊ グー', scissors: '✌️ チョキ', paper: '🖐️ パー' };
+  const JANKEN_BEATS = { rock: 'scissors', scissors: 'paper', paper: 'rock' }; // キー が バリュー に勝つ
+  const JANKEN_LOCK_MS = 1500;
+
+  let jankenState = 'idle'; // idle | countdown | ready
+  let jankenLockTimeoutId = null;
+
+  function setJankenHandButtonsEnabled(enabled) {
+    document.getElementById('janken-btn-rock').disabled = !enabled;
+    document.getElementById('janken-btn-scissors').disabled = !enabled;
+    document.getElementById('janken-btn-paper').disabled = !enabled;
+  }
+
+  function jankenScreenTap() {
+    if (jankenState !== 'idle') return; // 掛け声中・手待ち中は画面タップ無効
+    beginJankenCountdown('じゃんけん…');
+  }
+
+  function beginJankenCountdown(text) {
+    const screen = document.getElementById('janken-screen');
+    const screenText = document.getElementById('janken-screen-text');
+    jankenState = 'countdown';
+    setJankenHandButtonsEnabled(false);
+    document.getElementById('janken-result').innerText = '';
+    screen.classList.remove('reveal');
+    screen.classList.add('countdown');
+    screenText.innerText = text;
+
+    jankenLockTimeoutId = setTimeout(() => {
+      jankenState = 'ready';
+      screen.classList.remove('countdown');
+      screenText.innerText = '手を出してね！';
+      setJankenHandButtonsEnabled(true);
+    }, JANKEN_LOCK_MS);
+  }
+
+  function playJanken(playerHand) {
+    if (jankenState !== 'ready') return; // 掛け声中は出せない
+    setJankenHandButtonsEnabled(false);
+
+    const comHand = JANKEN_OPTIONS[Math.floor(Math.random() * 3)];
+    const screen = document.getElementById('janken-screen');
+    const screenText = document.getElementById('janken-screen-text');
+    const resultDiv = document.getElementById('janken-result');
+
+    screen.classList.add('reveal');
+    screenText.innerText = JANKEN_EMOJI[comHand];
+
+    if (playerHand === comHand) {
+      resultDiv.innerHTML = `相手: ${JANKEN_LABEL[comHand]}<br>🤝 あいこ！`;
+      setTimeout(() => {
+        screen.classList.remove('reveal');
+        beginJankenCountdown('あいこで…');
+      }, 900);
+      return;
+    }
+
+    const playerWins = JANKEN_BEATS[playerHand] === comHand;
+
+    if (playerWins) {
+      jankenStreak++;
+      const earned = Math.min(jankenStreak, 15);
+      updateTickets(earned);
+      document.getElementById('janken-streak').innerText = `連勝数: ${jankenStreak}`;
+      resultDiv.innerHTML = `相手: ${JANKEN_LABEL[comHand]}<br>🎉 勝ち！ ${jankenStreak}連勝中！<br>🎫 トークンを${earned}枚GET！`;
+    } else {
+      resultDiv.innerHTML = `相手: ${JANKEN_LABEL[comHand]}<br>😢 負け…${jankenStreak}連勝でストップ`;
+
+      if (jankenStreak > jankenBest) {
+        jankenBest = jankenStreak;
+        localStorage.setItem('jankenBest', jankenBest);
+        document.getElementById('janken-best').innerText = `自己ベスト: ${jankenBest}連勝`;
+      }
+
+      if (jankenStreak > 0 && maybeQualifiesForJankenLeaderboard(jankenStreak)) {
+        pendingJankenScore = jankenStreak;
+        document.getElementById('janken-name-form').style.display = 'block';
+      }
+
+      jankenStreak = 0;
+      document.getElementById('janken-streak').innerText = `連勝数: 0`;
+    }
+
+    // 勝敗が決したので次は画面タップから
+    jankenState = 'idle';
+    setTimeout(() => {
+      screen.classList.remove('reveal');
+      screenText.innerText = 'タップしてスタート';
+    }, 1200);
+  }
+
+  function submitJankenScore() {
+    const nameInput = document.getElementById('janken-name-input');
+    const name = (nameInput.value.trim() || '名無しの暇人').slice(0, 10);
+    submitScoreToJankenLeaderboard(name, pendingJankenScore);
+    document.getElementById('janken-name-form').style.display = 'none';
+    nameInput.value = '';
+  }
+
   // 数当てゲーム
   // ============================================================
   let secretNumber = 0;
@@ -1126,7 +1310,7 @@
   let runnerAnimId = null;
   let runnerStartTs = 0;
   let runnerElapsed = 0;
-  let runnerSpeed = 4.0;
+  let runnerSpeed = 3.0;
   let obstacles = [];
   let obstacleTimer = 0;
   let nextObstacleGap = 90;
@@ -1153,7 +1337,7 @@
     if (runnerPlaying) return;
     runnerPlaying = true;
     runnerElapsed = 0;
-    runnerSpeed = 4.0;
+    runnerSpeed = 3.0;
     obstacles = [];
     obstacleTimer = 0;
     nextObstacleGap = 75 + Math.random() * 35;
@@ -1284,7 +1468,7 @@
         obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji: type.emoji, kind: 'ground', speedMult: 0.9 + Math.random() * 0.3 });
       }
     }
-    runnerSpeed = Math.min(8.5, 4.0 + runnerElapsed * 0.16);
+    runnerSpeed = Math.min(6.5, 3.0 + runnerElapsed * 0.13);
 
     for (let i = obstacles.length - 1; i >= 0; i--) {
       const o = obstacles[i];
@@ -1371,6 +1555,8 @@
   let leaderboardRef = null;
   let currentReactionLeaderboard = [];
   let reactionLeaderboardRef = null;
+  let currentJankenLeaderboard = [];
+  let jankenLeaderboardRef = null;
   let currentBoardPosts = [];
   let boardRef = null;
   let gachaCountRef = null;
@@ -1389,6 +1575,13 @@
       const data = snap.val() || [];
       currentReactionLeaderboard = Array.isArray(data) ? data : Object.values(data);
       renderReactionLeaderboard();
+    });
+
+    jankenLeaderboardRef = firebase.database().ref('jankenLeaderboard');
+    jankenLeaderboardRef.on('value', (snap) => {
+      const data = snap.val() || [];
+      currentJankenLeaderboard = Array.isArray(data) ? data : Object.values(data);
+      renderJankenLeaderboard();
     });
 
     // 累計アクセスカウンター（全員の画面にリアルタイム反映）
@@ -1416,6 +1609,8 @@
     document.getElementById('leaderboard-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">ランキング機能は準備中です。</p>';
     document.getElementById('reaction-leaderboard-list').innerHTML =
+      '<p style="font-size:12px; color: var(--ink-dim);">ランキング機能は準備中です。</p>';
+    document.getElementById('janken-leaderboard-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">ランキング機能は準備中です。</p>';
     document.getElementById('board-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">掲示板機能は準備中です。</p>';
@@ -1485,6 +1680,35 @@
       .sort((a, b) => a.score - b.score)
       .slice(0, 5);
     reactionLeaderboardRef.set(merged);
+  }
+
+  function renderJankenLeaderboard() {
+    const list = document.getElementById('janken-leaderboard-list');
+    if (!currentJankenLeaderboard.length) {
+      list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">まだ記録がありません。最初の挑戦者になろう！</p>';
+      return;
+    }
+    const sorted = [...currentJankenLeaderboard].sort((a, b) => b.score - a.score).slice(0, 5);
+    list.innerHTML = sorted.map((e, i) =>
+      `<div class="rank-row"><span>${i + 1}位</span><span>${escapeHtml(e.name)}</span><span>${e.score}連勝</span></div>`
+    ).join('');
+  }
+
+  function maybeQualifiesForJankenLeaderboard(score) {
+    if (currentJankenLeaderboard.length < 5) return true;
+    const worst = Math.min(...currentJankenLeaderboard.map(e => e.score));
+    return score > worst;
+  }
+
+  function submitScoreToJankenLeaderboard(name, score) {
+    if (!jankenLeaderboardRef) {
+      alert('ランキング機能は準備中です。（Firebase設定が必要です）');
+      return;
+    }
+    const merged = [...currentJankenLeaderboard, { name, score, ts: Date.now() }]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+    jankenLeaderboardRef.set(merged);
   }
 
   // ============================================================
