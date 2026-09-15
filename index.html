@@ -664,7 +664,7 @@
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.2.8</p>
+  <p class="marquee-version">ver.2.9</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -673,6 +673,7 @@
 </div>
 
 <p class="access-counter">👀 累計来場者数: <span id="total-visits">読み込み中...</span> 人目！</p>
+<p class="access-counter">🟢 現在アクセス中: <span id="online-count">読み込み中...</span> 人</p>
 
 <div class="token-bar">
   🎫 トークン: <span id="ticket-count-header">5</span> 枚
@@ -1607,6 +1608,19 @@
     });
     visitsRef.transaction((current) => (current || 0) + 1);
 
+    // 現在アクセス中の人数（タブを閉じたり回線が切れたら自動で人数から消える）
+    const presenceRef = firebase.database().ref('minigamePresence');
+    const myPresenceRef = presenceRef.push();
+    firebase.database().ref('.info/connected').on('value', (snap) => {
+      if (snap.val() === true) {
+        myPresenceRef.onDisconnect().remove();
+        myPresenceRef.set(true);
+      }
+    });
+    presenceRef.on('value', (snap) => {
+      document.getElementById('online-count').innerText = snap.numChildren();
+    });
+
     // 総ガチャ回数（全員の画面にリアルタイム反映。何が出たかは記録しません）
     gachaCountRef = firebase.database().ref('minigameGachaCount');
     gachaCountRef.on('value', (snap) => {
@@ -1639,6 +1653,7 @@
     document.getElementById('board-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">掲示板機能は準備中です。</p>';
     document.getElementById('total-visits').innerText = '準備中';
+    document.getElementById('online-count').innerText = '準備中';
     document.getElementById('total-gacha-count').innerText = '準備中';
   }
 
