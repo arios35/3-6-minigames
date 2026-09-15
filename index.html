@@ -22,6 +22,7 @@
     --orange: #ff8a3d;
     --gold: #ffd23f;
     --green: #2be07a;
+    --red: #ff4d4d;
     --ink: #f4eefc;
     --ink-dim: #b9a9d6;
   }
@@ -162,6 +163,7 @@
   .cab-orange { border-color: var(--orange); box-shadow: 0 0 18px rgba(255,138,61,0.25); max-width: 460px; }
   .cab-gold   { border-color: var(--gold);   box-shadow: 0 0 18px rgba(255,210,63,0.25); }
   .cab-green  { border-color: var(--green);  box-shadow: 0 0 18px rgba(43,224,122,0.25); }
+  .cab-red    { border-color: var(--red);    box-shadow: 0 0 18px rgba(255,77,77,0.25); }
 
   .arcade-btn {
     border: none;
@@ -182,6 +184,7 @@
   .btn-orange { background: var(--orange); }
   .btn-gold   { background: var(--gold); }
   .btn-green  { background: var(--green); }
+  .btn-red    { background: var(--red); color: #fff; }
 
   .status-row {
     display: flex;
@@ -270,6 +273,37 @@
   }
   .janken-hand-btn:disabled {
     opacity: 0.35;
+  }
+
+  /* 10秒チャレンジ */
+  .tensec-display {
+    width: 100%;
+    padding: 22px 10px;
+    border-radius: 16px;
+    background: #0d0620;
+    border: 2px solid rgba(255,77,77,0.4);
+    text-align: center;
+    margin-top: 6px;
+  }
+  .tensec-display .value {
+    font-family: 'Courier New', monospace;
+    font-size: 52px;
+    font-weight: 900;
+    color: var(--red);
+    text-shadow: 0 0 14px rgba(255,77,77,0.6);
+    letter-spacing: 1px;
+  }
+  .tensec-display .unit {
+    font-size: 16px;
+    color: var(--ink-dim);
+    margin-left: 4px;
+  }
+  .tensec-btn {
+    width: 100%;
+    height: 76px;
+    font-size: 24px;
+    border-radius: 18px;
+    margin-top: 12px;
   }
 
   /* 数当てゲーム */
@@ -369,9 +403,9 @@
     border-radius: 12px;
     min-height: 40px;
   }
-  .rarity-omega { color: #ffff00; font-weight: bold; font-size: 16px; text-shadow: 0 0 12px #ffff00; white-space: nowrap; margin: 5px 0; }
+  .rarity-omega { color: #ff2b2b; font-weight: bold; font-size: 16px; text-shadow: 0 0 12px #ff2b2b; white-space: nowrap; margin: 5px 0; }
   .rarity-omegaplus { color: #ff8800; font-weight: bold; font-size: 17px; text-shadow: 0 0 14px #ff8800; white-space: nowrap; margin: 5px 0; }
-  .rarity-god { color: #ff2b2b; font-weight: bold; font-size: 18px; text-shadow: 0 0 16px #ff2b2b, 0 0 26px #ffffff; white-space: nowrap; margin: 6px 0; }
+  .rarity-god { color: #ffff00; font-weight: bold; font-size: 18px; text-shadow: 0 0 16px #ffff00, 0 0 26px #ffffff; white-space: nowrap; margin: 6px 0; }
   .rarity-xerr { color: #ff0000; font-weight: 900; font-size: 19px; text-shadow: 0 0 4px #000, 0 0 18px #8b0000; white-space: nowrap; margin: 6px 0; letter-spacing: 1px; }
   .rarity-ur    { color: #ff3366; font-weight: bold; font-size: 15px; text-shadow: 0 0 8px #ff3366; white-space: nowrap; margin: 4px 0; }
   .rarity-ssr   { color: #00ffff; font-weight: bold; font-size: 14px; margin: 3px 0; }
@@ -664,7 +698,7 @@
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.2.9</p>
+  <p class="marquee-version">ver.3.0</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -751,6 +785,35 @@
   <div class="leaderboard">
     <p class="leaderboard-title" style="color: var(--green);">🏆 ランキング TOP5（最高連勝数）</p>
     <div id="janken-leaderboard-list">
+      <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
+    </div>
+  </div>
+</div>
+
+<!-- 筐体：10秒チャレンジ -->
+<div class="cabinet cab-red">
+  <div class="cabinet-header">
+    <span class="cabinet-icon">⏱️</span>
+    <p class="cabinet-title">10秒チャレンジ</p>
+  </div>
+  <p class="cabinet-desc">スタートを押してからストップを押すまでの時間が「10.000秒」にどれだけ近いかを競うゲーム！誤差が小さいほど高得点。</p>
+
+  <div class="tensec-display">
+    <span class="value" id="tensec-value">0.000</span><span class="unit">秒</span>
+  </div>
+
+  <button id="tensec-btn" class="arcade-btn btn-red tensec-btn" onclick="tensecButtonTap()">スタート</button>
+  <div class="result-line" id="tensec-result"></div>
+
+  <div class="runner-name-form" id="tensec-name-form">
+    <p style="font-size:13px; font-weight:bold; color: var(--gold); margin:0 0 8px 0;">🎉 ランキング入り目前！なまえを入力してね</p>
+    <input type="text" id="tensec-name-input" maxlength="10" placeholder="なまえ（10文字まで）">
+    <button class="arcade-btn btn-red" onclick="submitTensecScore()">送信</button>
+  </div>
+
+  <div class="leaderboard">
+    <p class="leaderboard-title" style="color: var(--red);">🏆 ランキング TOP5（10.000秒への近さ）</p>
+    <div id="tensec-leaderboard-list">
       <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
     </div>
   </div>
@@ -1180,6 +1243,67 @@
     nameInput.value = '';
   }
 
+  // ============================================================
+  // 10秒チャレンジ
+  // ============================================================
+  let tensecRunning = false;
+  let tensecStartTs = 0;
+  let tensecAnimId = null;
+  let pendingTensecScore = 0;
+
+  function tensecButtonTap() {
+    if (!tensecRunning) {
+      tensecRunning = true;
+      tensecStartTs = performance.now();
+      document.getElementById('tensec-result').innerText = '';
+      document.getElementById('tensec-name-form').style.display = 'none';
+      document.getElementById('tensec-btn').innerText = 'ストップ！';
+      tensecLoop();
+    } else {
+      tensecRunning = false;
+      cancelAnimationFrame(tensecAnimId);
+      const elapsedSec = (performance.now() - tensecStartTs) / 1000;
+      document.getElementById('tensec-value').innerText = elapsedSec.toFixed(3);
+      document.getElementById('tensec-btn').innerText = 'もう一度スタート';
+
+      const diff = Math.abs(elapsedSec - 10.0);
+      let earned = 0;
+      let msg = `記録: ${elapsedSec.toFixed(3)}秒（誤差 ${diff.toFixed(3)}秒）`;
+      if (diff < 0.01)      { earned = 100; msg += ' 👑 神業！！'; }
+      else if (diff < 0.05) { earned = 60;  msg += ' 🔥 超精密！'; }
+      else if (diff < 0.1)  { earned = 35;  msg += ' ✨ かなり正確！'; }
+      else if (diff < 0.3)  { earned = 15;  msg += ' 🏆 ナイス！'; }
+      else if (diff < 0.5)  { earned = 8;   msg += ' 😊 いい感じ！'; }
+      else if (diff < 1.0)  { earned = 3;   msg += ' 👍 ナイスチャレンジ！'; }
+      else                  { earned = 1;   msg += ''; }
+
+      updateTickets(earned);
+      msg += `<br>🎫 トークンを${earned}枚GET！`;
+      document.getElementById('tensec-result').innerHTML = msg;
+
+      if (maybeQualifiesForTensecLeaderboard(diff)) {
+        pendingTensecScore = diff;
+        document.getElementById('tensec-name-form').style.display = 'block';
+      }
+    }
+  }
+
+  function tensecLoop() {
+    const elapsedSec = (performance.now() - tensecStartTs) / 1000;
+    document.getElementById('tensec-value').innerText = elapsedSec.toFixed(3);
+    if (tensecRunning) {
+      tensecAnimId = requestAnimationFrame(tensecLoop);
+    }
+  }
+
+  function submitTensecScore() {
+    const nameInput = document.getElementById('tensec-name-input');
+    const name = (nameInput.value.trim() || '名無しの暇人').slice(0, 10);
+    submitScoreToTensecLeaderboard(name, pendingTensecScore);
+    document.getElementById('tensec-name-form').style.display = 'none';
+    nameInput.value = '';
+  }
+
   // 数当てゲーム
   // ============================================================
   let secretNumber = 0;
@@ -1572,6 +1696,8 @@
   let reactionLeaderboardRef = null;
   let currentJankenLeaderboard = [];
   let jankenLeaderboardRef = null;
+  let currentTensecLeaderboard = [];
+  let tensecLeaderboardRef = null;
   let currentBoardPosts = [];
   let boardRef = null;
   let boardCounterRef = null;
@@ -1599,6 +1725,13 @@
       const data = snap.val() || [];
       currentJankenLeaderboard = Array.isArray(data) ? data : Object.values(data);
       renderJankenLeaderboard();
+    });
+
+    tensecLeaderboardRef = firebase.database().ref('tensecLeaderboard');
+    tensecLeaderboardRef.on('value', (snap) => {
+      const data = snap.val() || [];
+      currentTensecLeaderboard = Array.isArray(data) ? data : Object.values(data);
+      renderTensecLeaderboard();
     });
 
     // 累計アクセスカウンター（全員の画面にリアルタイム反映）
@@ -1649,6 +1782,8 @@
     document.getElementById('reaction-leaderboard-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">ランキング機能は準備中です。</p>';
     document.getElementById('janken-leaderboard-list').innerHTML =
+      '<p style="font-size:12px; color: var(--ink-dim);">ランキング機能は準備中です。</p>';
+    document.getElementById('tensec-leaderboard-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">ランキング機能は準備中です。</p>';
     document.getElementById('board-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">掲示板機能は準備中です。</p>';
@@ -1748,6 +1883,35 @@
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
     jankenLeaderboardRef.set(merged);
+  }
+
+  function renderTensecLeaderboard() {
+    const list = document.getElementById('tensec-leaderboard-list');
+    if (!currentTensecLeaderboard.length) {
+      list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">まだ記録がありません。最初の挑戦者になろう！</p>';
+      return;
+    }
+    const sorted = [...currentTensecLeaderboard].sort((a, b) => a.score - b.score).slice(0, 5);
+    list.innerHTML = sorted.map((e, i) =>
+      `<div class="rank-row"><span>${i + 1}位</span><span>${escapeHtml(e.name)}</span><span>誤差${e.score.toFixed(3)}秒</span></div>`
+    ).join('');
+  }
+
+  function maybeQualifiesForTensecLeaderboard(diff) {
+    if (currentTensecLeaderboard.length < 5) return true;
+    const worst = Math.max(...currentTensecLeaderboard.map(e => e.score));
+    return diff < worst;
+  }
+
+  function submitScoreToTensecLeaderboard(name, diff) {
+    if (!tensecLeaderboardRef) {
+      alert('ランキング機能は準備中です。（Firebase設定が必要です）');
+      return;
+    }
+    const merged = [...currentTensecLeaderboard, { name, score: diff, ts: Date.now() }]
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 5);
+    tensecLeaderboardRef.set(merged);
   }
 
   // ============================================================
@@ -1984,7 +2148,7 @@
   // レアリティの表示順と色。CARDSに新しいカードを追加するだけで
   // 図鑑・確率計算・演出すべてに自動で反映されます。
   const RARITY_ORDER = ['N', 'R', 'SR', 'SSR', 'UR', 'Ω', 'Ω+', 'GOD', 'X-ERR'];
-  const RARITY_COLOR = { N: '#ffffff', R: '#00e676', SR: '#e040fb', SSR: '#00ffff', UR: '#ff3366', 'Ω': '#ffff00', 'Ω+': '#ff8800', GOD: '#ff2b2b', 'X-ERR': '#8b0000' };
+  const RARITY_COLOR = { N: '#ffffff', R: '#00e676', SR: '#e040fb', SSR: '#00ffff', UR: '#ff3366', 'Ω': '#ff2b2b', 'Ω+': '#ff8800', GOD: '#ffff00', 'X-ERR': '#8b0000' };
 
   function renderAlbum() {
     const grid = document.getElementById('album-grid');
