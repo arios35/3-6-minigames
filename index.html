@@ -664,7 +664,7 @@
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.2.7</p>
+  <p class="marquee-version">ver.2.8</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -1279,6 +1279,10 @@
   const GROUND_Y = RUNNER_H - 24;
   const GRAVITY = 0.9;
   const JUMP_VELOCITY = -13;
+  // ジャンプ1回（上昇→着地）に必要なフレーム数はおよそ29フレーム（|JUMP_VELOCITY|/GRAVITY*2）。
+  // 障害物同士の間隔（フレーム数）がこれを下回ると「絶対に避けられない配置」が発生しうるため、
+  // 難易度調整で縮めて良いのはこの値まで。これより小さくしないこと。
+  const MIN_SAFE_OBSTACLE_GAP = 40;
 
   const OBSTACLE_TYPES = [
     { emoji: '🌵', kind: 'ground' },
@@ -1294,22 +1298,25 @@
     { emoji: '🚁', kind: 'air' }
   ];
 
-  // 経過時間に応じて出現する障害物の種類を増やす（ground常時 / fastは15秒〜 / airは25秒〜）
+  // 経過時間に応じて出現する障害物の種類を増やす（ground常時 / fastは10秒〜 / airは15秒〜）
   // allowSpecial: 直前の間隔が十分空いてる時だけ車・ヘリを許可（ジャンプが間に合うように）
+  // ※カテゴリ（ground/fast/air）単位でまず抽選し、そのカテゴリ内の絵文字をランダムに選ぶ。
+  //   絵文字の種類数（ヘリは1種類、車は5種類など）で確率が偏らないようにするため。
   function pickObstacleType(elapsed, allowSpecial, lastKind) {
-    const pool = [];
-    OBSTACLE_TYPES.forEach(t => {
-      if (t.kind === 'ground') pool.push({ t, weight: 4 });
-      else if (t.kind === 'fast' && elapsed >= 10 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 4 });
-      else if (t.kind === 'air' && elapsed >= 15 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 4 });
-    });
-    const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
+    const categories = [{ kind: 'ground', weight: 5 }];
+    if (elapsed >= 10 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') categories.push({ kind: 'fast', weight: 4 });
+    if (elapsed >= 15 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') categories.push({ kind: 'air', weight: 5 });
+
+    const totalWeight = categories.reduce((s, c) => s + c.weight, 0);
     let r = Math.random() * totalWeight;
-    for (const p of pool) {
-      if (r < p.weight) return p.t;
-      r -= p.weight;
+    let chosenKind = categories[0].kind;
+    for (const c of categories) {
+      if (r < c.weight) { chosenKind = c.kind; break; }
+      r -= c.weight;
     }
-    return pool[0].t;
+
+    const pool = OBSTACLE_TYPES.filter(t => t.kind === chosenKind);
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   let runnerPlaying = false;
@@ -1458,11 +1465,12 @@
     if (obstacleTimer > nextObstacleGap) {
       const thisGap = nextObstacleGap;
       obstacleTimer = 0;
-      const minGap = Math.max(20, 42 - runnerElapsed * 0.35);
+      // 下限は MIN_SAFE_OBSTACLE_GAP で固定（絶対に縮めない）。時間経過で縮むのは上限側の幅だけ。
+      const minGap = MIN_SAFE_OBSTACLE_GAP;
       const maxGap = Math.max(minGap + 18, 85 - runnerElapsed * 0.9);
       nextObstacleGap = minGap + Math.random() * (maxGap - minGap);
       // 直前の間隔が狭かった時は車・ヘリを出さない（ジャンプが間に合うように）
-      const allowSpecial = thisGap >= 55;
+      const allowSpecial = thisGap >= 50;
       const type = pickObstacleType(runnerElapsed, allowSpecial, lastObstacleKind);
       lastObstacleKind = type.kind;
       if (type.kind === 'air') {
