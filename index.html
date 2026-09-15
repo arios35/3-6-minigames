@@ -716,7 +716,7 @@
     <span class="cabinet-icon">✊</span>
     <p class="cabinet-title">じゃんけん対決</p>
   </div>
-  <p class="cabinet-desc">画面をタップして開始！「じゃんけん…」「あいこで…」の掛け声中（1.5秒）は手を出せません。勝つたび連勝数ぶんのトークンGET（最大15枚）。</p>
+  <p class="cabinet-desc">画面をタップして開始！「じゃんけん…」「あいこで…」の掛け声中（1.5秒）は手を出せません。勝つたび連勝数×3枚のトークンGET（最大60枚）。</p>
 
   <div class="status-row">
     <span id="janken-streak">連勝数: 0</span>
@@ -1105,7 +1105,6 @@
     jankenLockTimeoutId = setTimeout(() => {
       jankenState = 'ready';
       screen.classList.remove('countdown');
-      screenText.innerText = '手を出してね！';
       setJankenHandButtonsEnabled(true);
     }, JANKEN_LOCK_MS);
   }
@@ -1135,7 +1134,7 @@
 
     if (playerWins) {
       jankenStreak++;
-      const earned = Math.min(jankenStreak, 15);
+      const earned = Math.min(jankenStreak * 3, 60);
       updateTickets(earned);
       document.getElementById('janken-streak').innerText = `連勝数: ${jankenStreak}`;
       resultDiv.innerHTML = `相手: ${JANKEN_LABEL[comHand]}<br>🎉 勝ち！ ${jankenStreak}連勝中！<br>🎫 トークンを${earned}枚GET！`;
@@ -1559,6 +1558,8 @@
   let jankenLeaderboardRef = null;
   let currentBoardPosts = [];
   let boardRef = null;
+  let boardCounterRef = null;
+  let currentBoardMaxNum = 0;
   let gachaCountRef = null;
 
   try {
@@ -1602,6 +1603,13 @@
     boardRef.on('value', (snap) => {
       const data = snap.val() || {};
       currentBoardPosts = Object.entries(data).map(([key, v]) => ({ key, ...v }));
+      renderBoard();
+    });
+
+    // レス番号発行カウンター（削除されても番号がズレないよう、発行済みの最大番号を保持）
+    boardCounterRef = firebase.database().ref('minigameBoardCounter');
+    boardCounterRef.on('value', (snap) => {
+      currentBoardMaxNum = snap.val() || 0;
       renderBoard();
     });
   } catch (e) {
@@ -1722,46 +1730,49 @@
     const pagination = document.getElementById('board-pagination');
     const pageInfo = document.getElementById('board-page-info');
 
-    if (!currentBoardPosts.length) {
+    if (!currentBoardMaxNum) {
       list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">まだ投稿がありません。最初の投稿をしてみよう！</p>';
       pagination.innerHTML = '';
       pageInfo.innerText = '';
       return;
     }
 
-    // 古い順に並べて、投稿順の通し番号（レス番号）を振る
-    const sorted = [...currentBoardPosts].sort((a, b) => (a.ts || 0) - (b.ts || 0));
-    const totalPages = Math.max(1, Math.ceil(sorted.length / BOARD_PAGE_SIZE));
-
+    const totalPages = Math.max(1, Math.ceil(currentBoardMaxNum / BOARD_PAGE_SIZE));
     if (boardCurrentPage === null) boardCurrentPage = totalPages;
     if (boardCurrentPage > totalPages) boardCurrentPage = totalPages;
     if (boardCurrentPage < 1) boardCurrentPage = 1;
 
-    const startIdx = (boardCurrentPage - 1) * BOARD_PAGE_SIZE;
-    const pagePosts = sorted.slice(startIdx, startIdx + BOARD_PAGE_SIZE)
-      .map((post, idx) => ({ ...post, resNum: startIdx + idx + 1 }));
+    const rangeStart = (boardCurrentPage - 1) * BOARD_PAGE_SIZE + 1;
+    const rangeEnd = boardCurrentPage * BOARD_PAGE_SIZE;
 
-    pageInfo.innerText = `全${sorted.length}件中 ${startIdx + 1}〜${startIdx + pagePosts.length}件目（${boardCurrentPage}/${totalPages}ページ）`;
+    // このページの範囲（例:1〜100）に入るレス番号の投稿だけを表示。
+    // 削除された番号はそのまま欠番になり、後の番号は詰まりません。
+    const postsInRange = currentBoardPosts.filter(p => p.resNum >= rangeStart && p.resNum <= rangeEnd);
+    const sortedAsc = [...postsInRange].sort((a, b) => a.resNum - b.resNum);
+    const displayPosts = [...sortedAsc].reverse(); // 表示だけ新しい順（上が最新）
 
-    // 通し番号（レス番号）は投稿順のまま、表示だけ新しい順（上が最新）にする
-    const displayPosts = [...pagePosts].reverse();
+    pageInfo.innerText = `No.${rangeStart}〜${rangeEnd}（${boardCurrentPage}/${totalPages}ページ）`;
 
-    list.innerHTML = displayPosts.map((post) => {
-      const resNum = post.resNum;
-      const date = post.ts ? new Date(post.ts) : null;
-      const timeStr = date ? `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` : '';
-      const deleteBtn = isDevMode
-        ? `<button class="board-action-btn board-delete-btn" onclick="deleteBoardPost('${post.key}')">🗑️ 削除</button>`
-        : '';
-      return `<div class="board-post" id="board-post-${resNum}">
-        <div class="board-post-name">${resNum} ： ${escapeHtml(post.name || '名無しの暇人')}　<span class="board-post-time">${timeStr}</span></div>
-        <div class="board-post-text">${linkifyBoardText(post.text || '')}</div>
-        <div class="board-post-actions">
-          <button class="board-action-btn" onclick="replyToBoardPost(${resNum})">↩ 返信</button>
-          ${deleteBtn}
-        </div>
-      </div>`;
-    }).join('');
+    if (!displayPosts.length) {
+      list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">このページに表示できる投稿はありません（削除された可能性があります）。</p>';
+    } else {
+      list.innerHTML = displayPosts.map((post) => {
+        const resNum = post.resNum;
+        const date = post.ts ? new Date(post.ts) : null;
+        const timeStr = date ? `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` : '';
+        const deleteBtn = isDevMode
+          ? `<button class="board-action-btn board-delete-btn" onclick="deleteBoardPost('${post.key}')">🗑️ 削除</button>`
+          : '';
+        return `<div class="board-post" id="board-post-${resNum}">
+          <div class="board-post-name">${resNum} ： ${escapeHtml(post.name || '名無しの暇人')}　<span class="board-post-time">${timeStr}</span></div>
+          <div class="board-post-text">${linkifyBoardText(post.text || '')}</div>
+          <div class="board-post-actions">
+            <button class="board-action-btn" onclick="replyToBoardPost(${resNum})">↩ 返信</button>
+            ${deleteBtn}
+          </div>
+        </div>`;
+      }).join('');
+    }
 
     // ページネーションボタン
     if (totalPages <= 1) {
@@ -1831,13 +1842,19 @@
       alert('メッセージを入力してね！');
       return;
     }
-    if (!boardRef) {
+    if (!boardRef || !boardCounterRef) {
       alert('掲示板機能は準備中です。（Firebase設定が必要です）');
       return;
     }
     const name = (nameInput.value.trim() || '名無しの暇人').slice(0, 10);
-    boardRef.push({ name, text: text.slice(0, 200), ts: Date.now() });
-    boardCurrentPage = null; // 投稿したら最新ページに戻る
+
+    // カウンターで固定のレス番号を発行（削除されても他の番号がズレないようにするため）
+    boardCounterRef.transaction((current) => (current || 0) + 1).then((result) => {
+      const resNum = result.snapshot.val();
+      boardRef.push({ name, text: text.slice(0, 200), ts: Date.now(), resNum });
+      boardCurrentPage = null; // 投稿したら最新ページに戻る
+    });
+
     nameInput.value = '';
     textInput.value = '';
   }
