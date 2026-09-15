@@ -1294,7 +1294,7 @@
     OBSTACLE_TYPES.forEach(t => {
       if (t.kind === 'ground') pool.push({ t, weight: 4 });
       else if (t.kind === 'fast' && elapsed >= 10 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 4 });
-      else if (t.kind === 'air' && elapsed >= 22 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 1.5 });
+      else if (t.kind === 'air' && elapsed >= 15 && allowSpecial && lastKind !== 'fast' && lastKind !== 'air') pool.push({ t, weight: 4 });
     });
     const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
     let r = Math.random() * totalWeight;
@@ -1460,11 +1460,11 @@
       lastObstacleKind = type.kind;
       if (type.kind === 'air') {
         // ヘリコプター：立ってれば当たらないが、ジャンプの軌道上に必ず重なる高さに配置
-        obstacles.push({ x: RUNNER_W, w: 34, h: 26, emoji: type.emoji, kind: 'air', y: GROUND_Y - (65 + Math.random() * 15), speedMult: 1.1 });
+        obstacles.push({ x: RUNNER_W, w: 34, h: 26, emoji: type.emoji, kind: 'air', y: GROUND_Y - (65 + Math.random() * 15), speedMult: 1 });
       } else if (type.kind === 'fast') {
         obstacles.push({ x: RUNNER_W, w: 28, h: 26 + Math.random() * 10, emoji: type.emoji, kind: 'fast', speedMult: 1.2 + Math.random() * 0.25 });
       } else {
-        obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji: type.emoji, kind: 'ground', speedMult: 0.9 + Math.random() * 0.3 });
+        obstacles.push({ x: RUNNER_W, w: 18, h: 26 + Math.random() * 14, emoji: type.emoji, kind: 'ground', speedMult: 1 });
       }
     }
     runnerSpeed = Math.min(6.5, 3.0 + runnerElapsed * 0.13);
@@ -1603,6 +1603,7 @@
     boardRef.on('value', (snap) => {
       const data = snap.val() || {};
       currentBoardPosts = Object.entries(data).map(([key, v]) => ({ key, ...v }));
+      migrateLegacyBoardPosts();
       renderBoard();
     });
 
@@ -1724,6 +1725,20 @@
   // ============================================================
   const BOARD_PAGE_SIZE = 100;
   let boardCurrentPage = null; // null = 常に最新ページを表示
+
+  // 番号（resNum）を持たない古い投稿に、投稿順で番号を発行して復旧する
+  let legacyMigrationDone = false;
+  function migrateLegacyBoardPosts() {
+    if (legacyMigrationDone || !boardRef || !boardCounterRef) return;
+    const legacy = currentBoardPosts.filter(p => !p.resNum);
+    if (!legacy.length) { legacyMigrationDone = true; return; }
+    const sortedLegacy = [...legacy].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    sortedLegacy.forEach((post, idx) => {
+      boardRef.child(post.key).update({ resNum: idx + 1 });
+    });
+    boardCounterRef.transaction((current) => Math.max(current || 0, sortedLegacy.length));
+    legacyMigrationDone = true;
+  }
 
   function renderBoard() {
     const list = document.getElementById('board-list');
