@@ -761,7 +761,7 @@
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.3.1</p>
+  <p class="marquee-version">ver.3.2</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -808,7 +808,7 @@
   </div>
 
   <div class="leaderboard">
-    <p class="leaderboard-title" style="color: var(--cyan);">🏆 ランキング TOP5（平均反応速度）</p>
+    <p class="leaderboard-title" style="color: var(--cyan);">🏆 ランキング TOP10（平均反応速度）</p>
     <div id="reaction-leaderboard-list">
       <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
     </div>
@@ -846,7 +846,7 @@
   </div>
 
   <div class="leaderboard">
-    <p class="leaderboard-title" style="color: var(--green);">🏆 ランキング TOP5（最高連勝数）</p>
+    <p class="leaderboard-title" style="color: var(--green);">🏆 ランキング TOP10（最高連勝数）</p>
     <div id="janken-leaderboard-list">
       <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
     </div>
@@ -875,7 +875,7 @@
   </div>
 
   <div class="leaderboard">
-    <p class="leaderboard-title" style="color: var(--red);">🏆 ランキング TOP8（10.000秒への近さ）</p>
+    <p class="leaderboard-title" style="color: var(--red);">🏆 ランキング TOP10（10.000秒への近さ）</p>
     <div id="tensec-leaderboard-list">
       <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
     </div>
@@ -926,7 +926,7 @@
   </div>
 
   <div class="leaderboard">
-    <p class="leaderboard-title">🏆 ランキング TOP5</p>
+    <p class="leaderboard-title">🏆 ランキング TOP10</p>
     <div id="leaderboard-list">
       <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
     </div>
@@ -1721,7 +1721,16 @@
     document.getElementById('runner-result').innerHTML =
       `🏁 ゲームオーバー！生存時間: ${finalScore}秒<br>🎫 トークンを${earned}枚GET！`;
     document.getElementById('runner-hint').innerText = 'スタートを押して開始、その後はボタンでジャンプ！';
-    document.getElementById('runner-action-btn').innerText = 'もう一度スタート！！';
+
+    // ジャンプ連打の勢いで「もう一度」を誤タップし、ランキング登録を逃す事故が多発したため
+    // ゲームオーバー直後の1.5秒はボタンを無効化する
+    const btn = document.getElementById('runner-action-btn');
+    btn.disabled = true;
+    btn.innerText = '少々お待ちください…';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerText = 'もう一度スタート！！';
+    }, 1500);
 
     if (maybeQualifiesForLeaderboard(finalScore)) {
       pendingRunnerScore = finalScore;
@@ -1868,14 +1877,14 @@
       list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">まだ記録がありません。最初の挑戦者になろう！</p>';
       return;
     }
-    const sorted = [...currentLeaderboard].sort((a, b) => b.score - a.score).slice(0, 5);
+    const sorted = [...currentLeaderboard].sort((a, b) => b.score - a.score).slice(0, 10);
     list.innerHTML = sorted.map((e, i) =>
       `<div class="rank-row"><span>${i + 1}位</span><span>${escapeHtml(e.name)}</span><span>${e.score.toFixed(1)}秒</span></div>`
     ).join('');
   }
 
   function maybeQualifiesForLeaderboard(score) {
-    if (currentLeaderboard.length < 5) return true;
+    if (currentLeaderboard.length < 10) return true;
     const lowest = Math.min(...currentLeaderboard.map(e => e.score));
     return score > lowest;
   }
@@ -1887,7 +1896,7 @@
     }
     const merged = [...currentLeaderboard, { name, score, ts: Date.now() }]
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+      .slice(0, 10);
     leaderboardRef.set(merged);
   }
 
@@ -1897,14 +1906,14 @@
       list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">まだ記録がありません。最初の挑戦者になろう！</p>';
       return;
     }
-    const sorted = [...currentReactionLeaderboard].sort((a, b) => a.score - b.score).slice(0, 5);
+    const sorted = [...currentReactionLeaderboard].sort((a, b) => a.score - b.score).slice(0, 10);
     list.innerHTML = sorted.map((e, i) =>
       `<div class="rank-row"><span>${i + 1}位</span><span>${escapeHtml(e.name)}</span><span>${e.score}ms</span></div>`
     ).join('');
   }
 
   function maybeQualifiesForReactionLeaderboard(score) {
-    if (currentReactionLeaderboard.length < 5) return true;
+    if (currentReactionLeaderboard.length < 10) return true;
     const worst = Math.max(...currentReactionLeaderboard.map(e => e.score));
     return score < worst;
   }
@@ -1916,7 +1925,7 @@
     }
     const merged = [...currentReactionLeaderboard, { name, score, ts: Date.now() }]
       .sort((a, b) => a.score - b.score)
-      .slice(0, 5);
+      .slice(0, 10);
     reactionLeaderboardRef.set(merged);
   }
 
@@ -1926,14 +1935,14 @@
       list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">まだ記録がありません。最初の挑戦者になろう！</p>';
       return;
     }
-    const sorted = [...currentJankenLeaderboard].sort((a, b) => b.score - a.score).slice(0, 5);
+    const sorted = [...currentJankenLeaderboard].sort((a, b) => b.score - a.score).slice(0, 10);
     list.innerHTML = sorted.map((e, i) =>
       `<div class="rank-row"><span>${i + 1}位</span><span>${escapeHtml(e.name)}</span><span>${e.score}連勝</span></div>`
     ).join('');
   }
 
   function maybeQualifiesForJankenLeaderboard(score) {
-    if (currentJankenLeaderboard.length < 5) return true;
+    if (currentJankenLeaderboard.length < 10) return true;
     const worst = Math.min(...currentJankenLeaderboard.map(e => e.score));
     return score > worst;
   }
@@ -1945,7 +1954,7 @@
     }
     const merged = [...currentJankenLeaderboard, { name, score, ts: Date.now() }]
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+      .slice(0, 10);
     jankenLeaderboardRef.set(merged);
   }
 
@@ -1955,14 +1964,14 @@
       list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">まだ記録がありません。最初の挑戦者になろう！</p>';
       return;
     }
-    const sorted = [...currentTensecLeaderboard].sort((a, b) => a.score - b.score).slice(0, 8);
+    const sorted = [...currentTensecLeaderboard].sort((a, b) => a.score - b.score).slice(0, 10);
     list.innerHTML = sorted.map((e, i) =>
       `<div class="rank-row"><span>${i + 1}位</span><span>${escapeHtml(e.name)}</span><span>誤差${e.score.toFixed(3)}秒</span></div>`
     ).join('');
   }
 
   function maybeQualifiesForTensecLeaderboard(diff) {
-    if (currentTensecLeaderboard.length < 8) return true;
+    if (currentTensecLeaderboard.length < 10) return true;
     const worst = Math.max(...currentTensecLeaderboard.map(e => e.score));
     return diff < worst;
   }
@@ -1974,7 +1983,7 @@
     }
     const merged = [...currentTensecLeaderboard, { name, score: diff, ts: Date.now() }]
       .sort((a, b) => a.score - b.score)
-      .slice(0, 8);
+      .slice(0, 10);
     tensecLeaderboardRef.set(merged);
   }
 
