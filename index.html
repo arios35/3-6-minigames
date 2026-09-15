@@ -52,6 +52,56 @@
   }
 
   /* --- マーキー（アーケード看板）ヘッダー --- */
+  /* プロフィール（自分にだけ表示） */
+  .profile-bar {
+    max-width: 420px;
+    margin: 0 auto 14px auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  .profile-name-text {
+    font-weight: bold;
+    color: var(--ink);
+  }
+  .profile-title-text {
+    color: var(--gold);
+    margin-right: 4px;
+  }
+  .profile-edit-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: var(--ink-dim);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .profile-edit-panel {
+    display: none;
+    max-width: 420px;
+    margin: -6px auto 14px auto;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .profile-edit-panel input,
+  .profile-edit-panel select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+  }
+
   .marquee {
     max-width: 420px;
     margin: 0 auto 28px auto;
@@ -695,10 +745,23 @@
 </head>
 <body>
 
+<div class="profile-bar" id="profile-bar">
+  <span id="profile-display">👤 設定してね</span>
+  <button class="profile-edit-btn" onclick="toggleProfileEdit()">✏️ 編集</button>
+</div>
+<div class="profile-edit-panel" id="profile-edit-panel">
+  <input type="text" id="profile-name-input" maxlength="10" placeholder="なまえ（10文字まで）">
+  <select id="profile-title-select">
+    <option value="">称号なし</option>
+  </select>
+  <button class="arcade-btn btn-gold" style="width:100%;" onclick="saveProfile()">保存</button>
+  <p style="font-size:11px; color: var(--ink-dim); margin: 8px 0 0 0;">※このなまえ・称号はあなたの画面にだけ表示されます（他の人には見えません）</p>
+</div>
+
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.3.0</p>
+  <p class="marquee-version">ver.3.1</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -812,7 +875,7 @@
   </div>
 
   <div class="leaderboard">
-    <p class="leaderboard-title" style="color: var(--red);">🏆 ランキング TOP5（10.000秒への近さ）</p>
+    <p class="leaderboard-title" style="color: var(--red);">🏆 ランキング TOP8（10.000秒への近さ）</p>
     <div id="tensec-leaderboard-list">
       <p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p>
     </div>
@@ -1269,12 +1332,13 @@
       const diff = Math.abs(elapsedSec - 10.0);
       let earned = 0;
       let msg = `記録: ${elapsedSec.toFixed(3)}秒（誤差 ${diff.toFixed(3)}秒）`;
-      if (diff < 0.01)      { earned = 100; msg += ' 👑 神業！！'; }
-      else if (diff < 0.05) { earned = 60;  msg += ' 🔥 超精密！'; }
-      else if (diff < 0.1)  { earned = 35;  msg += ' ✨ かなり正確！'; }
-      else if (diff < 0.3)  { earned = 15;  msg += ' 🏆 ナイス！'; }
-      else if (diff < 0.5)  { earned = 8;   msg += ' 😊 いい感じ！'; }
-      else if (diff < 1.0)  { earned = 3;   msg += ' 👍 ナイスチャレンジ！'; }
+      if (diff < 0.005)      { earned = 100; msg += ' 👑 神業！！'; }
+      else if (diff < 0.015) { earned = 60;  msg += ' 🔥 超精密！'; }
+      else if (diff < 0.03)  { earned = 35;  msg += ' ✨ かなり正確！'; }
+      else if (diff < 0.05)  { earned = 20;  msg += ' 🏆 ナイス！'; }
+      else if (diff < 0.1)   { earned = 10;  msg += ' 😊 いい感じ！'; }
+      else if (diff < 0.3)   { earned = 5;   msg += ' 👍 ナイスチャレンジ！'; }
+      else if (diff < 0.5)   { earned = 2;   msg += ''; }
       else                  { earned = 1;   msg += ''; }
 
       updateTickets(earned);
@@ -1891,14 +1955,14 @@
       list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">まだ記録がありません。最初の挑戦者になろう！</p>';
       return;
     }
-    const sorted = [...currentTensecLeaderboard].sort((a, b) => a.score - b.score).slice(0, 5);
+    const sorted = [...currentTensecLeaderboard].sort((a, b) => a.score - b.score).slice(0, 8);
     list.innerHTML = sorted.map((e, i) =>
       `<div class="rank-row"><span>${i + 1}位</span><span>${escapeHtml(e.name)}</span><span>誤差${e.score.toFixed(3)}秒</span></div>`
     ).join('');
   }
 
   function maybeQualifiesForTensecLeaderboard(diff) {
-    if (currentTensecLeaderboard.length < 5) return true;
+    if (currentTensecLeaderboard.length < 8) return true;
     const worst = Math.max(...currentTensecLeaderboard.map(e => e.score));
     return diff < worst;
   }
@@ -1910,7 +1974,7 @@
     }
     const merged = [...currentTensecLeaderboard, { name, score: diff, ts: Date.now() }]
       .sort((a, b) => a.score - b.score)
-      .slice(0, 5);
+      .slice(0, 8);
     tensecLeaderboardRef.set(merged);
   }
 
@@ -2194,6 +2258,60 @@
     document.getElementById('album-toggle-btn').innerText = `📖 図鑑を見る (${ownedCount}/${CARDS.length})`;
   }
   renderAlbum();
+
+  // ============================================================
+  // プロフィール（自分にだけ表示。称号はガチャで持ってるカードから選べる）
+  // ============================================================
+  let myProfileName = localStorage.getItem('myProfileName') || '';
+  let myProfileTitleNo = localStorage.getItem('myProfileTitleNo') || '';
+
+  function renderProfileDisplay() {
+    const nameToShow = myProfileName || '名無しの暇人';
+    let titleHtml = '';
+    if (myProfileTitleNo) {
+      const card = CARDS.find(c => String(c.no) === String(myProfileTitleNo));
+      if (card && ownedCards[card.no]) {
+        titleHtml = `<span class="profile-title-text">【${escapeHtml(card.name)}】</span>`;
+      }
+    }
+    document.getElementById('profile-display').innerHTML =
+      `👤 ${titleHtml}<span class="profile-name-text">${escapeHtml(nameToShow)}</span>`;
+  }
+
+  function populateProfileTitleOptions() {
+    const select = document.getElementById('profile-title-select');
+    select.innerHTML = '<option value="">称号なし</option>';
+    CARDS.forEach(card => {
+      if (ownedCards[card.no]) {
+        const opt = document.createElement('option');
+        opt.value = card.no;
+        opt.innerText = `${card.emoji} ${card.name}`;
+        select.appendChild(opt);
+      }
+    });
+    select.value = myProfileTitleNo || '';
+  }
+
+  function toggleProfileEdit() {
+    const panel = document.getElementById('profile-edit-panel');
+    const opening = panel.style.display !== 'block';
+    if (opening) {
+      populateProfileTitleOptions();
+      document.getElementById('profile-name-input').value = myProfileName;
+    }
+    panel.style.display = opening ? 'block' : 'none';
+  }
+
+  function saveProfile() {
+    myProfileName = document.getElementById('profile-name-input').value.trim().slice(0, 10);
+    myProfileTitleNo = document.getElementById('profile-title-select').value;
+    localStorage.setItem('myProfileName', myProfileName);
+    localStorage.setItem('myProfileTitleNo', myProfileTitleNo);
+    renderProfileDisplay();
+    document.getElementById('profile-edit-panel').style.display = 'none';
+  }
+
+  renderProfileDisplay();
 
   function toggleAlbum() {
     const grid = document.getElementById('album-grid');
