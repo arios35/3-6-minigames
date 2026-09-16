@@ -76,24 +76,77 @@
   }
 
   /* --- マーキー（アーケード看板）ヘッダー --- */
+  /* メニュー */
+  .menu-bar {
+    max-width: 420px;
+    margin: 0 auto 10px auto;
+    text-align: left;
+  }
+  .menu-toggle-btn {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px 16px;
+    border-radius: 14px;
+    cursor: pointer;
+  }
+  .menu-panel {
+    display: none;
+    max-width: 420px;
+    margin: 0 auto 14px auto;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 14px;
+    padding: 10px;
+    text-align: left;
+  }
+  .menu-item-btn {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    background: none;
+    border: none;
+    color: var(--ink);
+    font-size: 14px;
+    text-align: left;
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .menu-item-btn:active {
+    background: rgba(255,255,255,0.1);
+  }
+  .menu-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.15);
+    margin: 6px 4px;
+  }
+
   /* プロフィール（自分にだけ表示） */
   .profile-bar {
     max-width: 420px;
     margin: 0 auto 14px auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
     background: rgba(0,0,0,0.35);
     border: 2px solid rgba(255,255,255,0.25);
     border-radius: 24px;
-    padding: 14px 20px;
-    font-size: 19px;
+    padding: 16px 20px;
+    text-align: center;
+  }
+  .profile-title-line {
+    display: block;
+    margin-bottom: 6px;
+    min-height: 22px;
+  }
+  .profile-name-line {
+    display: block;
   }
   .profile-name-text {
     font-weight: 900;
     color: var(--ink);
-    font-size: 20px;
+    font-size: 22px;
   }
   .profile-title-text {
     color: var(--gold);
@@ -826,9 +879,25 @@
 </head>
 <body>
 
+<div class="menu-bar">
+  <button class="menu-toggle-btn" onclick="toggleMenu()">☰ メニュー</button>
+</div>
+<div class="menu-panel" id="menu-panel">
+  <button class="menu-item-btn" onclick="openProfileFromMenu()">✏️ プロフィールを編集</button>
+  <div class="menu-divider"></div>
+  <a class="menu-item-btn" href="#cabinet-shop" onclick="closeMenu()">🛒 ショップ</a>
+  <a class="menu-item-btn" href="#cabinet-renda" onclick="closeMenu()">🎮 連打チャレンジ</a>
+  <a class="menu-item-btn" href="#cabinet-reaction" onclick="closeMenu()">⚡ 反射神経チャレンジ</a>
+  <a class="menu-item-btn" href="#cabinet-janken" onclick="closeMenu()">✊ じゃんけん対決</a>
+  <a class="menu-item-btn" href="#cabinet-tensec" onclick="closeMenu()">⏱️ 10秒チャレンジ</a>
+  <a class="menu-item-btn" href="#cabinet-number" onclick="closeMenu()">🔢 数当てゲーム</a>
+  <a class="menu-item-btn" href="#cabinet-runner" onclick="closeMenu()">🏃 障害物ゲーム</a>
+  <a class="menu-item-btn" href="#cabinet-gacha" onclick="closeMenu()">🎰 ガチャ・図鑑</a>
+  <a class="menu-item-btn" href="#cabinet-board" onclick="closeMenu()">📮 意見箱・掲示板</a>
+</div>
+
 <div class="profile-bar" id="profile-bar">
   <span id="profile-display">👤 設定してね</span>
-  <button class="profile-edit-btn" onclick="toggleProfileEdit()">✏️ 編集</button>
 </div>
 <div class="profile-edit-panel" id="profile-edit-panel">
   <input type="text" id="profile-name-input" maxlength="10" placeholder="なまえ（10文字まで）">
@@ -842,7 +911,7 @@
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.3.3</p>
+  <p class="marquee-version">ver.3.4</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -857,8 +926,23 @@
   🎫 トークン: <span id="ticket-count-header">5</span> 枚
 </div>
 
+<!-- 筐体：ショップ -->
+<div class="cabinet cab-indigo" id="cabinet-shop">
+  <div class="cabinet-header">
+    <span class="cabinet-icon">🛒</span>
+    <p class="cabinet-title">ショップ</p>
+  </div>
+  <p class="cabinet-desc">トークンで称号や背景テーマを購入できます。買った物は端末に保存され、ずっと使えます。</p>
+
+  <p class="shop-section-title">🏷️ 称号</p>
+  <div id="shop-title-list"></div>
+
+  <p class="shop-section-title">🎨 背景テーマ</p>
+  <div id="shop-theme-list"></div>
+</div>
+
 <!-- 筐体1：連打チャレンジ -->
-<div class="cabinet cab-pink">
+<div class="cabinet cab-pink" id="cabinet-renda">
   <div class="cabinet-header">
     <span class="cabinet-icon">🎮</span>
     <p class="cabinet-title">連打チャレンジ</p>
@@ -873,7 +957,7 @@
 </div>
 
 <!-- 筐体2：反射神経チャレンジ -->
-<div class="cabinet cab-cyan">
+<div class="cabinet cab-cyan" id="cabinet-reaction">
   <div class="cabinet-header">
     <span class="cabinet-icon">⚡</span>
     <p class="cabinet-title">反射神経チャレンジ</p>
@@ -897,7 +981,7 @@
 </div>
 
 <!-- 筐体：じゃんけん対決 -->
-<div class="cabinet cab-green">
+<div class="cabinet cab-green" id="cabinet-janken">
   <div class="cabinet-header">
     <span class="cabinet-icon">✊</span>
     <p class="cabinet-title">じゃんけん対決</p>
@@ -935,7 +1019,7 @@
 </div>
 
 <!-- 筐体：10秒チャレンジ -->
-<div class="cabinet cab-red">
+<div class="cabinet cab-red" id="cabinet-tensec">
   <div class="cabinet-header">
     <span class="cabinet-icon">⏱️</span>
     <p class="cabinet-title">10秒チャレンジ</p>
@@ -964,7 +1048,7 @@
 </div>
 
 <!-- 筐体3：数当てゲーム -->
-<div class="cabinet cab-purple">
+<div class="cabinet cab-purple" id="cabinet-number">
   <div class="cabinet-header">
     <span class="cabinet-icon">🔢</span>
     <p class="cabinet-title">数当てゲーム</p>
@@ -980,7 +1064,7 @@
 </div>
 
 <!-- 筐体4：2D障害物ゲーム ＋ ランキング -->
-<div class="cabinet cab-orange">
+<div class="cabinet cab-orange" id="cabinet-runner">
   <div class="cabinet-header">
     <span class="cabinet-icon">🏃</span>
     <p class="cabinet-title">障害物を飛び越えろ！</p>
@@ -1015,7 +1099,7 @@
 </div>
 
 <!-- 筐体5：3-6 ガチャ ＋ 図鑑 -->
-<div class="cabinet cab-gold">
+<div class="cabinet cab-gold" id="cabinet-gacha">
   <div class="cabinet-header">
     <span class="cabinet-icon">🎰</span>
     <p class="cabinet-title">3-6 ガチャ</p>
@@ -1049,7 +1133,7 @@
 </div>
 
 <!-- 筐体6：意見箱・掲示板 -->
-<div class="cabinet cab-pink">
+<div class="cabinet cab-pink" id="cabinet-board">
   <div class="cabinet-header">
     <span class="cabinet-icon">📮</span>
     <p class="cabinet-title">意見箱・掲示板</p>
@@ -1072,21 +1156,6 @@
   </div>
 
   <div id="board-pagination" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; justify-content:center;"></div>
-</div>
-
-<!-- 筐体：ショップ -->
-<div class="cabinet cab-indigo">
-  <div class="cabinet-header">
-    <span class="cabinet-icon">🛒</span>
-    <p class="cabinet-title">ショップ</p>
-  </div>
-  <p class="cabinet-desc">トークンで称号や背景テーマを購入できます。買った物は端末に保存され、ずっと使えます。</p>
-
-  <p class="shop-section-title">🏷️ 称号</p>
-  <div id="shop-title-list"></div>
-
-  <p class="shop-section-title">🎨 背景テーマ</p>
-  <div id="shop-theme-list"></div>
 </div>
 
 <!-- カットイン（Ω専用の最高演出） -->
@@ -2494,7 +2563,8 @@
       }
     }
     document.getElementById('profile-display').innerHTML =
-      `👤 ${titleHtml}<span class="profile-name-text">${escapeHtml(nameToShow)}</span>`;
+      `<span class="profile-title-line">${titleHtml || '&nbsp;'}</span>` +
+      `<span class="profile-name-line">👤 <span class="profile-name-text">${escapeHtml(nameToShow)}</span></span>`;
   }
 
   function populateProfileTitleOptions() {
@@ -2527,6 +2597,26 @@
       document.getElementById('profile-name-input').value = myProfileName;
     }
     panel.style.display = opening ? 'block' : 'none';
+  }
+
+  // ============================================================
+  // メニュー（プロフィール編集は必ずここから／各ゲームへのジャンプ）
+  // ============================================================
+  function toggleMenu() {
+    const panel = document.getElementById('menu-panel');
+    panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+  }
+
+  function closeMenu() {
+    document.getElementById('menu-panel').style.display = 'none';
+  }
+
+  function openProfileFromMenu() {
+    closeMenu();
+    populateProfileTitleOptions();
+    document.getElementById('profile-name-input').value = myProfileName;
+    document.getElementById('profile-edit-panel').style.display = 'block';
+    document.getElementById('profile-bar').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function saveProfile() {
