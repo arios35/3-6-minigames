@@ -23,6 +23,9 @@
     --gold: #ffd23f;
     --green: #2be07a;
     --red: #ff4d4d;
+    --indigo: #6c5ce7;
+    --bg-grad-start: #2a1148;
+    --bg-grad-end: #0a0414;
     --ink: #f4eefc;
     --ink-dim: #b9a9d6;
   }
@@ -32,12 +35,33 @@
   body {
     margin: 0;
     padding: 28px 14px 80px 14px;
-    background: radial-gradient(circle at 50% 0%, #2a1148 0%, var(--bg-deep) 55%, #0a0414 100%);
+    background: radial-gradient(circle at 50% 0%, var(--bg-grad-start) 0%, var(--bg-deep) 55%, var(--bg-grad-end) 100%);
     color: var(--ink);
     font-family: "Helvetica Neue", Arial, sans-serif;
     text-align: center;
     overflow-x: hidden;
     position: relative;
+    transition: background 0.6s ease;
+  }
+
+  /* --- ショップで購入できる背景テーマ --- */
+  body.theme-ocean {
+    --bg-grad-start: #003a5c;
+    --bg-deep: #001c2e;
+    --bg-grad-end: #000a11;
+    --bg-panel: #013a52;
+  }
+  body.theme-sakura {
+    --bg-grad-start: #55234a;
+    --bg-deep: #2e0f28;
+    --bg-grad-end: #140611;
+    --bg-panel: #45203c;
+  }
+  body.theme-inferno {
+    --bg-grad-start: #5c0000;
+    --bg-deep: #2a0000;
+    --bg-grad-end: #0d0000;
+    --bg-panel: #430b0b;
   }
 
   a.back-link {
@@ -59,28 +83,37 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 13px;
+    gap: 10px;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 24px;
+    padding: 14px 20px;
+    font-size: 19px;
   }
   .profile-name-text {
-    font-weight: bold;
+    font-weight: 900;
     color: var(--ink);
+    font-size: 20px;
   }
   .profile-title-text {
     color: var(--gold);
-    margin-right: 4px;
+    font-weight: bold;
+    margin-right: 6px;
+    font-size: 18px;
+  }
+  .profile-title-emoji {
+    font-size: 22px;
+    margin-right: 2px;
   }
   .profile-edit-btn {
     background: none;
-    border: 1px solid rgba(255,255,255,0.3);
+    border: 1px solid rgba(255,255,255,0.35);
     color: var(--ink-dim);
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 12px;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 14px;
     cursor: pointer;
+    white-space: nowrap;
   }
   .profile-edit-panel {
     display: none;
@@ -214,6 +247,7 @@
   .cab-gold   { border-color: var(--gold);   box-shadow: 0 0 18px rgba(255,210,63,0.25); }
   .cab-green  { border-color: var(--green);  box-shadow: 0 0 18px rgba(43,224,122,0.25); }
   .cab-red    { border-color: var(--red);    box-shadow: 0 0 18px rgba(255,77,77,0.25); }
+  .cab-indigo { border-color: var(--indigo); box-shadow: 0 0 18px rgba(108,92,231,0.3); }
 
   .arcade-btn {
     border: none;
@@ -235,6 +269,7 @@
   .btn-gold   { background: var(--gold); }
   .btn-green  { background: var(--green); }
   .btn-red    { background: var(--red); color: #fff; }
+  .btn-indigo { background: var(--indigo); color: #fff; }
 
   .status-row {
     display: flex;
@@ -741,6 +776,52 @@
     border-color: var(--pink);
     color: var(--pink);
   }
+
+  /* ショップ */
+  .shop-section-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--indigo);
+    margin: 18px 0 10px 0;
+  }
+  .shop-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .shop-item-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+  }
+  .shop-item-emoji {
+    font-size: 26px;
+  }
+  .shop-item-name {
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .shop-item-price {
+    font-size: 12px;
+    color: var(--gold);
+  }
+  .shop-buy-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .shop-owned-label {
+    font-size: 12px;
+    color: var(--ink-dim);
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -761,7 +842,7 @@
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.3.2</p>
+  <p class="marquee-version">ver.3.3</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -991,6 +1072,21 @@
   </div>
 
   <div id="board-pagination" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; justify-content:center;"></div>
+</div>
+
+<!-- 筐体：ショップ -->
+<div class="cabinet cab-indigo">
+  <div class="cabinet-header">
+    <span class="cabinet-icon">🛒</span>
+    <p class="cabinet-title">ショップ</p>
+  </div>
+  <p class="cabinet-desc">トークンで称号や背景テーマを購入できます。買った物は端末に保存され、ずっと使えます。</p>
+
+  <p class="shop-section-title">🏷️ 称号</p>
+  <div id="shop-title-list"></div>
+
+  <p class="shop-section-title">🎨 背景テーマ</p>
+  <div id="shop-theme-list"></div>
 </div>
 
 <!-- カットイン（Ω専用の最高演出） -->
@@ -2269,18 +2365,132 @@
   renderAlbum();
 
   // ============================================================
-  // プロフィール（自分にだけ表示。称号はガチャで持ってるカードから選べる）
+  // ショップ（称号・背景テーマ購入）
+  // ============================================================
+  const SHOP_TITLES = [
+    { id: 'himajin',       emoji: '😴', name: '暇人',         price: 1000 },
+    { id: 'super_himajin', emoji: '💤', name: '超暇人',       price: 10000 },
+    { id: 'gacha_haijin',  emoji: '🎰', name: 'ガチャ廃人',   price: 10000 },
+    { id: 'ranking_joi',   emoji: '🏅', name: 'ランキング上位', price: 13000 }
+  ];
+  const SHOP_THEMES = [
+    { id: 'default', emoji: '🌌', name: '初期テーマ',   price: 0,    className: '' },
+    { id: 'ocean',    emoji: '🌊', name: 'オーシャン',   price: 1000, className: 'theme-ocean' },
+    { id: 'sakura',   emoji: '🌸', name: 'サクラ',       price: 2000, className: 'theme-sakura' },
+    { id: 'inferno',  emoji: '🔥', name: 'インフェルノ', price: 3500, className: 'theme-inferno' }
+  ];
+
+  let purchasedShopTitles = [];
+  try { purchasedShopTitles = JSON.parse(localStorage.getItem('purchasedShopTitles') || '[]'); } catch (e) { purchasedShopTitles = []; }
+  let purchasedThemes = [];
+  try { purchasedThemes = JSON.parse(localStorage.getItem('purchasedThemes') || '[]'); } catch (e) { purchasedThemes = []; }
+  let equippedThemeId = localStorage.getItem('equippedThemeId') || 'default';
+
+  // 保存されているテーマをすぐに反映
+  (function applyStoredTheme() {
+    const theme = SHOP_THEMES.find(t => t.id === equippedThemeId) || SHOP_THEMES[0];
+    document.body.className = theme.className;
+  })();
+
+  function renderShopTitles() {
+    const container = document.getElementById('shop-title-list');
+    container.innerHTML = SHOP_TITLES.map(t => {
+      const owned = purchasedShopTitles.includes(t.id);
+      const actionHtml = owned
+        ? `<span class="shop-owned-label">✅ 所持済み</span>`
+        : `<button class="arcade-btn btn-indigo shop-buy-btn" onclick="buyShopTitle('${t.id}')">購入</button>`;
+      return `<div class="shop-item">
+        <div class="shop-item-info">
+          <span class="shop-item-emoji">${t.emoji}</span>
+          <div>
+            <div class="shop-item-name">${t.name}</div>
+            <div class="shop-item-price">${t.price.toLocaleString()}枚</div>
+          </div>
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+  }
+
+  function buyShopTitle(id) {
+    const t = SHOP_TITLES.find(x => x.id === id);
+    if (!t || purchasedShopTitles.includes(id)) return;
+    if (tickets < t.price) { alert('トークンが足りません！'); return; }
+    updateTickets(-t.price);
+    purchasedShopTitles.push(id);
+    localStorage.setItem('purchasedShopTitles', JSON.stringify(purchasedShopTitles));
+    renderShopTitles();
+    alert(`🎉「${t.name}」を購入しました！プロフィール編集から称号に設定できます。`);
+  }
+
+  function renderShopThemes() {
+    const container = document.getElementById('shop-theme-list');
+    container.innerHTML = SHOP_THEMES.map(theme => {
+      const owned = theme.id === 'default' || purchasedThemes.includes(theme.id);
+      const equipped = equippedThemeId === theme.id;
+      let actionHtml;
+      if (equipped) {
+        actionHtml = `<span class="shop-owned-label">✅ 使用中</span>`;
+      } else if (owned) {
+        actionHtml = `<button class="arcade-btn btn-indigo shop-buy-btn" onclick="equipTheme('${theme.id}')">適用する</button>`;
+      } else {
+        actionHtml = `<button class="arcade-btn btn-indigo shop-buy-btn" onclick="buyTheme('${theme.id}')">購入</button>`;
+      }
+      return `<div class="shop-item">
+        <div class="shop-item-info">
+          <span class="shop-item-emoji">${theme.emoji}</span>
+          <div>
+            <div class="shop-item-name">${theme.name}</div>
+            <div class="shop-item-price">${theme.price === 0 ? '無料' : theme.price.toLocaleString() + '枚'}</div>
+          </div>
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+  }
+
+  function buyTheme(id) {
+    const theme = SHOP_THEMES.find(t => t.id === id);
+    if (!theme) return;
+    if (tickets < theme.price) { alert('トークンが足りません！'); return; }
+    updateTickets(-theme.price);
+    purchasedThemes.push(id);
+    localStorage.setItem('purchasedThemes', JSON.stringify(purchasedThemes));
+    equipTheme(id);
+  }
+
+  function equipTheme(id) {
+    const theme = SHOP_THEMES.find(t => t.id === id);
+    if (!theme) return;
+    document.body.className = theme.className;
+    equippedThemeId = id;
+    localStorage.setItem('equippedThemeId', id);
+    renderShopThemes();
+  }
+
+  renderShopTitles();
+  renderShopThemes();
+
+  // ============================================================
+  // プロフィール（自分にだけ表示。称号はガチャのカード or ショップ購入から選べる）
   // ============================================================
   let myProfileName = localStorage.getItem('myProfileName') || '';
-  let myProfileTitleNo = localStorage.getItem('myProfileTitleNo') || '';
+  let myProfileTitleNo = localStorage.getItem('myProfileTitleNo') || ''; // "card:番号" or "shop:id"
 
   function renderProfileDisplay() {
     const nameToShow = myProfileName || '名無しの暇人';
     let titleHtml = '';
-    if (myProfileTitleNo) {
-      const card = CARDS.find(c => String(c.no) === String(myProfileTitleNo));
+    if (myProfileTitleNo && myProfileTitleNo.startsWith('card:')) {
+      const no = myProfileTitleNo.slice(5);
+      const card = CARDS.find(c => String(c.no) === no);
       if (card && ownedCards[card.no]) {
-        titleHtml = `<span class="profile-title-text">【${escapeHtml(card.name)}】</span>`;
+        titleHtml = `<span class="profile-title-emoji">${card.emoji}</span><span class="profile-title-text">【${escapeHtml(card.name)}】</span>`;
+      }
+    } else if (myProfileTitleNo && myProfileTitleNo.startsWith('shop:')) {
+      const id = myProfileTitleNo.slice(5);
+      const t = SHOP_TITLES.find(x => x.id === id);
+      if (t && purchasedShopTitles.includes(id)) {
+        titleHtml = `<span class="profile-title-emoji">${t.emoji}</span><span class="profile-title-text">【${escapeHtml(t.name)}】</span>`;
       }
     }
     document.getElementById('profile-display').innerHTML =
@@ -2293,8 +2503,16 @@
     CARDS.forEach(card => {
       if (ownedCards[card.no]) {
         const opt = document.createElement('option');
-        opt.value = card.no;
+        opt.value = `card:${card.no}`;
         opt.innerText = `${card.emoji} ${card.name}`;
+        select.appendChild(opt);
+      }
+    });
+    SHOP_TITLES.forEach(t => {
+      if (purchasedShopTitles.includes(t.id)) {
+        const opt = document.createElement('option');
+        opt.value = `shop:${t.id}`;
+        opt.innerText = `${t.emoji} ${t.name}`;
         select.appendChild(opt);
       }
     });
