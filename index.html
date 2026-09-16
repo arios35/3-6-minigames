@@ -831,17 +831,31 @@
   }
 
   /* ショップ */
+  .shop-scroll {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 4px 4px 10px 4px;
+    margin: 8px -4px 0 -4px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .shop-column {
+    flex: 0 0 auto;
+    width: 240px;
+    scroll-snap-align: start;
+  }
   .shop-section-title {
     font-size: 14px;
     font-weight: bold;
     color: var(--indigo);
-    margin: 18px 0 10px 0;
+    margin: 0 0 10px 0;
   }
   .shop-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
     background: rgba(255,255,255,0.06);
     border-radius: 12px;
     padding: 12px 14px;
@@ -858,7 +872,7 @@
   }
   .shop-item-name {
     font-weight: bold;
-    font-size: 14px;
+    font-size: 13px;
   }
   .shop-item-price {
     font-size: 12px;
@@ -868,12 +882,13 @@
     padding: 8px 16px;
     font-size: 13px;
     white-space: nowrap;
+    width: 100%;
   }
   .shop-owned-label {
     font-size: 12px;
     color: var(--ink-dim);
-    padding: 8px 12px;
-    white-space: nowrap;
+    padding: 6px 0;
+    text-align: center;
   }
 </style>
 </head>
@@ -911,7 +926,7 @@
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.3.4</p>
+  <p class="marquee-version">ver.3.5</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -932,13 +947,22 @@
     <span class="cabinet-icon">🛒</span>
     <p class="cabinet-title">ショップ</p>
   </div>
-  <p class="cabinet-desc">トークンで称号や背景テーマを購入できます。買った物は端末に保存され、ずっと使えます。</p>
+  <p class="cabinet-desc">トークンで称号・背景テーマ・キャラスキンが購入できます。横スクロールで見てね（買った物は端末に保存され、ずっと使えます）。</p>
 
-  <p class="shop-section-title">🏷️ 称号</p>
-  <div id="shop-title-list"></div>
-
-  <p class="shop-section-title">🎨 背景テーマ</p>
-  <div id="shop-theme-list"></div>
+  <div class="shop-scroll">
+    <div class="shop-column">
+      <p class="shop-section-title">🏷️ 称号</p>
+      <div id="shop-title-list"></div>
+    </div>
+    <div class="shop-column">
+      <p class="shop-section-title">🎨 背景テーマ</p>
+      <div id="shop-theme-list"></div>
+    </div>
+    <div class="shop-column">
+      <p class="shop-section-title">🏃 キャラスキン（障害物ゲーム用）</p>
+      <div id="shop-skin-list"></div>
+    </div>
+  </div>
 </div>
 
 <!-- 筐体1：連打チャレンジ -->
@@ -1812,7 +1836,7 @@
       player.jumping = false;
     }
     rctx.font = '30px sans-serif';
-    rctx.fillText('🏃‍➡️', player.x, player.y + player.h);
+    rctx.fillText(getEquippedSkinEmoji(), player.x, player.y + player.h);
 
     // --- 障害物のスポーン（経過時間に応じて速度・間隔・種類が変化） ---
     obstacleTimer++;
@@ -2448,12 +2472,30 @@
     { id: 'sakura',   emoji: '🌸', name: 'サクラ',       price: 2000, className: 'theme-sakura' },
     { id: 'inferno',  emoji: '🔥', name: 'インフェルノ', price: 3500, className: 'theme-inferno' }
   ];
+  const SHOP_SKINS = [
+    { id: 'default',    emoji: '🏃\u200d➡️',        name: '初期スキン',           price: 0 },
+    { id: 'runner_f',    emoji: '🏃‍♀️‍➡️',        name: '走る女性',             price: 1500 },
+    { id: 'runner_m',    emoji: '🏃‍♂️‍➡️',        name: '走る男性',             price: 1500 },
+    { id: 'dancer',      emoji: '🕺',                 name: 'ダンサー',             price: 1500 },
+    { id: 'genie',       emoji: '🧞‍♂️',              name: 'ジーニー',             price: 1500 },
+    { id: 'fairy',       emoji: '🧚‍♂️',              name: 'フェアリー',           price: 1500 },
+    { id: 'runner_lf',   emoji: '🏃🏻‍♀️‍➡️',      name: '走る女性（明るい肌）', price: 1500 },
+    { id: 'runner_lm',   emoji: '🏃🏻‍♂️‍➡️',      name: '走る男性（明るい肌）', price: 1500 }
+  ];
 
   let purchasedShopTitles = [];
   try { purchasedShopTitles = JSON.parse(localStorage.getItem('purchasedShopTitles') || '[]'); } catch (e) { purchasedShopTitles = []; }
   let purchasedThemes = [];
   try { purchasedThemes = JSON.parse(localStorage.getItem('purchasedThemes') || '[]'); } catch (e) { purchasedThemes = []; }
   let equippedThemeId = localStorage.getItem('equippedThemeId') || 'default';
+  let purchasedSkins = [];
+  try { purchasedSkins = JSON.parse(localStorage.getItem('purchasedSkins') || '[]'); } catch (e) { purchasedSkins = []; }
+  let equippedSkinId = localStorage.getItem('equippedSkinId') || 'default';
+
+  function getEquippedSkinEmoji() {
+    const skin = SHOP_SKINS.find(s => s.id === equippedSkinId) || SHOP_SKINS[0];
+    return skin.emoji;
+  }
 
   // 保存されているテーマをすぐに反映
   (function applyStoredTheme() {
@@ -2537,8 +2579,53 @@
     renderShopThemes();
   }
 
+  function renderShopSkins() {
+    const container = document.getElementById('shop-skin-list');
+    container.innerHTML = SHOP_SKINS.map(skin => {
+      const owned = skin.id === 'default' || purchasedSkins.includes(skin.id);
+      const equipped = equippedSkinId === skin.id;
+      let actionHtml;
+      if (equipped) {
+        actionHtml = `<span class="shop-owned-label">✅ 使用中</span>`;
+      } else if (owned) {
+        actionHtml = `<button class="arcade-btn btn-indigo shop-buy-btn" onclick="equipSkin('${skin.id}')">適用する</button>`;
+      } else {
+        actionHtml = `<button class="arcade-btn btn-indigo shop-buy-btn" onclick="buySkin('${skin.id}')">購入</button>`;
+      }
+      return `<div class="shop-item">
+        <div class="shop-item-info">
+          <span class="shop-item-emoji">${skin.emoji}</span>
+          <div>
+            <div class="shop-item-name">${skin.name}</div>
+            <div class="shop-item-price">${skin.price === 0 ? '無料' : skin.price.toLocaleString() + '枚'}</div>
+          </div>
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+  }
+
+  function buySkin(id) {
+    const skin = SHOP_SKINS.find(s => s.id === id);
+    if (!skin) return;
+    if (tickets < skin.price) { alert('トークンが足りません！'); return; }
+    updateTickets(-skin.price);
+    purchasedSkins.push(id);
+    localStorage.setItem('purchasedSkins', JSON.stringify(purchasedSkins));
+    equipSkin(id);
+  }
+
+  function equipSkin(id) {
+    const skin = SHOP_SKINS.find(s => s.id === id);
+    if (!skin) return;
+    equippedSkinId = id;
+    localStorage.setItem('equippedSkinId', id);
+    renderShopSkins();
+  }
+
   renderShopTitles();
   renderShopThemes();
+  renderShopSkins();
 
   // ============================================================
   // プロフィール（自分にだけ表示。称号はガチャのカード or ショップ購入から選べる）
