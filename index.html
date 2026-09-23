@@ -100,6 +100,7 @@
     margin: 0 auto 10px auto;
     text-align: left;
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
   .menu-toggle-btn {
@@ -953,6 +954,32 @@
     color: var(--ink-dim);
     white-space: nowrap;
   }
+
+  /* 歴代記録 */
+  .hall-week {
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .hall-week-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .hall-game-name {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--cyan);
+    margin: 8px 0 2px 0;
+  }
+  .hall-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    padding: 2px 4px;
+  }
 </style>
 </head>
 <body>
@@ -960,6 +987,7 @@
 <div class="menu-bar">
   <button class="menu-toggle-btn" onclick="toggleMenu()">☰ メニュー</button>
   <button class="menu-toggle-btn" onclick="toggleMissions()">🎯 ミッション</button>
+  <button class="menu-toggle-btn" onclick="toggleRecords()">🏛️ 歴代記録</button>
 </div>
 <div class="menu-panel" id="menu-panel">
   <button class="menu-item-btn" onclick="openProfileFromMenu()">✏️ プロフィールを編集</button>
@@ -980,6 +1008,10 @@
   <p style="font-size:12px; color: var(--ink-dim); margin: 4px 8px 12px 8px;">条件を達成したら「🎁 受け取る」でトークンGET！</p>
   <div id="mission-list"></div>
 </div>
+<div class="menu-panel" id="record-panel">
+  <p style="font-size:12px; color: var(--ink-dim); margin: 4px 8px 12px 8px;">毎週月曜0時（日本時間）にランキングがリセットされ、その週の上位3名がここに記録されます。</p>
+  <div id="record-list"></div>
+</div>
 
 <div class="profile-bar" id="profile-bar">
   <span id="profile-display">👤 設定してね</span>
@@ -996,7 +1028,7 @@
 <div class="marquee">
   <p class="marquee-title">🕹️ 3-6 ミニゲーム部屋 🕹️</p>
   <p class="marquee-sub">遊んでトークンを稼いで、ガチャを回そう！</p>
-  <p class="marquee-version">ver.3.8</p>
+  <p class="marquee-version">ver.3.9</p>
   <div class="bulb-row">
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
     <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
@@ -2058,6 +2090,15 @@
   let boardCounterRef = null;
   let currentBoardMaxNum = 0;
   let gachaCountRef = null;
+  let currentHall = {};
+
+  // 日本時間での「今週の月曜日」を YYYY-MM-DD で返す
+  function getJstWeekKey() {
+    const d = new Date(Date.now() + 9 * 3600 * 1000);
+    const diff = (d.getUTCDay() + 6) % 7; // 月曜=0
+    const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - diff));
+    return monday.toISOString().slice(0, 10);
+  }
 
   try {
     firebase.initializeApp(firebaseConfig);
@@ -2130,6 +2171,53 @@
       currentBoardMaxNum = snap.val() || 0;
       renderBoard();
     });
+
+    // 歴代記録（週ごとの上位3名）
+    const hallRef = firebase.database().ref('minigameHallOfFame');
+    hallRef.on('value', (snap) => {
+      currentHall = snap.val() || {};
+      renderHall();
+    });
+
+    // 毎週月曜0時（JST）のリセット処理：最初に開いた人が1回だけ実行
+    const weekKeyRef = firebase.database().ref('minigameWeekKey');
+    const thisWeekKey = getJstWeekKey();
+    let prevWeekKey = null;
+    weekKeyRef.transaction((cur) => {
+      prevWeekKey = cur;
+      if (cur && cur >= thisWeekKey) return; // すでに今週分なら何もしない
+      return thisWeekKey;
+    }).then((result) => {
+      if (!result.committed || !prevWeekKey) return; // 初回セットアップ時は記録せず、週キーだけ保存
+      const db = firebase.database();
+      Promise.all([
+        db.ref('reactionLeaderboard').once('value'),
+        db.ref('jankenLeaderboard').once('value'),
+        db.ref('minigameLeaderboard').once('value')
+      ]).then(([rSnap, jSnap, gSnap]) => {
+        const toArr = (s) => { const v = s.val() || []; return Array.isArray(v) ? v : Object.values(v); };
+        const top3 = (arr, asc) => [...arr]
+          .sort((a, b) => asc ? a.score - b.score : b.score - a.score)
+          .slice(0, 3)
+          .map(e => ({ name: e.name, score: e.score }));
+        const record = {
+          reaction: top3(toArr(rSnap), true),
+          janken:   top3(toArr(jSnap), false),
+          runner:   top3(toArr(gSnap), false)
+        };
+        const hasAny = record.reaction.length || record.janken.length || record.runner.length;
+        const clearAll = () => Promise.all([
+          db.ref('reactionLeaderboard').set(null),
+          db.ref('jankenLeaderboard').set(null),
+          db.ref('minigameLeaderboard').set(null)
+        ]);
+        if (hasAny) {
+          hallRef.child(prevWeekKey).set(record).then(clearAll);
+        } else {
+          clearAll();
+        }
+      });
+    });
   } catch (e) {
     console.error('ランキング機能の初期化に失敗しました（Firebase設定を確認してください）:', e);
     document.getElementById('leaderboard-list').innerHTML =
@@ -2151,6 +2239,44 @@
     const div = document.createElement('div');
     div.innerText = str;
     return div.innerHTML;
+  }
+
+  // ============================================================
+  // 歴代記録（毎週月曜0時JSTにリセット。その週の上位3名を保存）
+  // ============================================================
+  function formatWeekRange(key) {
+    const [y, m, d] = key.split('-').map(Number);
+    const start = new Date(Date.UTC(y, m - 1, d));
+    const end = new Date(Date.UTC(y, m - 1, d + 6));
+    return `${start.getUTCMonth() + 1}/${start.getUTCDate()}〜${end.getUTCMonth() + 1}/${end.getUTCDate()}`;
+  }
+
+  function renderHall() {
+    const list = document.getElementById('record-list');
+    if (!list) return;
+    const weeks = Object.keys(currentHall || {}).sort().reverse();
+    if (!weeks.length) {
+      list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim); margin: 4px 8px;">まだ記録がありません。最初の月曜日をお楽しみに！</p>';
+      return;
+    }
+    const medals = ['🥇', '🥈', '🥉'];
+    const GAMES = [
+      { key: 'reaction', label: '⚡ 反射神経チャレンジ', fmt: (s) => `${s}ms` },
+      { key: 'janken',   label: '✊ じゃんけん対決',     fmt: (s) => `${s}連勝` },
+      { key: 'runner',   label: '🏃 障害物ゲーム',       fmt: (s) => `${Number(s).toFixed(1)}秒` }
+    ];
+    list.innerHTML = weeks.map(wk => {
+      const rec = currentHall[wk] || {};
+      const gamesHtml = GAMES.map(g => {
+        const raw = rec[g.key] || [];
+        const arr = Array.isArray(raw) ? raw : Object.values(raw);
+        const rows = arr.length
+          ? arr.map((e, i) => `<div class="hall-row"><span>${medals[i] || ''} ${escapeHtml(e.name)}</span><span>${g.fmt(e.score)}</span></div>`).join('')
+          : '<div class="hall-row" style="color: var(--ink-dim);">記録なし</div>';
+        return `<div class="hall-game-name">${g.label}</div>${rows}`;
+      }).join('');
+      return `<div class="hall-week"><div class="hall-week-title">📅 ${formatWeekRange(wk)} の週</div>${gamesHtml}</div>`;
+    }).join('');
   }
 
   function renderLeaderboard() {
@@ -2793,6 +2919,7 @@
     const panel = document.getElementById('menu-panel');
     const opening = panel.style.display !== 'block';
     document.getElementById('mission-panel').style.display = 'none';
+    document.getElementById('record-panel').style.display = 'none';
     panel.style.display = opening ? 'block' : 'none';
   }
 
@@ -2804,7 +2931,17 @@
     const panel = document.getElementById('mission-panel');
     const opening = panel.style.display !== 'block';
     document.getElementById('menu-panel').style.display = 'none';
+    document.getElementById('record-panel').style.display = 'none';
     if (opening) renderMissions();
+    panel.style.display = opening ? 'block' : 'none';
+  }
+
+  function toggleRecords() {
+    const panel = document.getElementById('record-panel');
+    const opening = panel.style.display !== 'block';
+    document.getElementById('menu-panel').style.display = 'none';
+    document.getElementById('mission-panel').style.display = 'none';
+    if (opening) renderHall();
     panel.style.display = opening ? 'block' : 'none';
   }
 
