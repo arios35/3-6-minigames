@@ -599,6 +599,7 @@
   .rarity-omegaplus { color: #ff8800; font-weight: bold; font-size: 17px; text-shadow: 0 0 14px #ff8800; white-space: nowrap; margin: 5px 0; }
   .rarity-god { color: #ffff00; font-weight: bold; font-size: 18px; text-shadow: 0 0 16px #ffff00, 0 0 26px #ffffff; white-space: nowrap; margin: 6px 0; }
   .rarity-xerr { color: #ff0000; font-weight: 900; font-size: 19px; text-shadow: 0 0 4px #000, 0 0 18px #8b0000; white-space: nowrap; margin: 6px 0; letter-spacing: 1px; }
+  .rarity-infinity { color: #fff3b0; font-weight: 900; font-size: 20px; text-shadow: 0 0 6px #fff, 0 0 18px #ffd54a, 0 0 32px #ffb300; white-space: nowrap; margin: 8px 0; letter-spacing: 1px; }
   .rarity-ur    { color: #ff3366; font-weight: bold; font-size: 15px; text-shadow: 0 0 8px #ff3366; white-space: nowrap; margin: 4px 0; }
   .rarity-ssr   { color: #00ffff; font-weight: bold; font-size: 14px; margin: 3px 0; }
   .rarity-sr    { color: #e040fb; font-weight: bold; font-size: 14px; margin: 2px 0; }
@@ -658,6 +659,14 @@
     min-height: 84px;
   }
   .album-cell.owned { background: rgba(255,255,255,0.06); }
+  /* INFINITY：縦2×横3マス分の大きなセル */
+  .album-cell.infinity { grid-column: span 3; grid-row: span 2; min-height: 176px; }
+  .album-cell.infinity .emoji { font-size: 56px; margin: 8px 0; }
+  .album-cell.infinity .name { font-size: 14px; font-weight: bold; }
+  .album-cell.infinity.owned {
+    background: linear-gradient(180deg, rgba(255,245,200,0.2), rgba(255,200,80,0.08));
+    box-shadow: 0 0 20px rgba(255,230,140,0.6), inset 0 0 18px rgba(255,240,180,0.25);
+  }
   .album-cell .no { font-size: 10.5px; color: var(--ink-dim); }
   .album-cell .emoji { font-size: 26px; margin: 4px 0; }
   .album-cell .name { font-size: 10.5px; word-break: break-word; }
@@ -816,6 +825,89 @@
     0%, 100% { transform: scale(1); }
     50%      { transform: scale(1.035); }
   }
+
+  /* === INFINITY：天から神が降りてくる演出 === */
+  #cutin-overlay.inf-active {
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,252,225,0.97) 0%, rgba(255,222,130,0.8) 28%, rgba(70,48,0,0.93) 72%, rgba(0,0,0,0.98) 100%);
+  }
+  #inf-rays {
+    display: none; position: fixed; top: 0; left: 50%;
+    width: 220vmax; height: 220vmax;
+    transform: translate(-50%, -50%) rotate(0deg);
+    background: repeating-conic-gradient(from 0deg, rgba(255,246,200,0.55) 0deg 4deg, rgba(255,255,255,0) 4deg 12deg);
+    -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0,0,0,0.45) 22%, transparent 48%);
+    mask-image: radial-gradient(circle, #000 0%, rgba(0,0,0,0.45) 22%, transparent 48%);
+    z-index: 9997; pointer-events: none;
+    animation: inf-rays-spin 40s linear infinite;
+  }
+  @keyframes inf-rays-spin { from { transform: translate(-50%,-50%) rotate(0deg);} to { transform: translate(-50%,-50%) rotate(360deg);} }
+  #inf-beam {
+    display: none; position: fixed; top: 0; left: 0; right: 0; margin: 0 auto;
+    width: 100vw; height: 100%;
+    clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+    background: linear-gradient(180deg, rgba(255,255,238,0.95) 0%, rgba(255,236,170,0.55) 55%, rgba(255,220,120,0) 100%);
+    transform-origin: top center;
+    z-index: 9997; pointer-events: none;
+    animation: inf-beam-in 1.8s ease-out both, inf-beam-pulse 3s ease-in-out 1.8s infinite alternate;
+  }
+  @keyframes inf-beam-in { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes inf-beam-pulse { from { opacity: 0.75; } to { opacity: 1; } }
+  #inf-halo {
+    display: none; position: fixed; top: 38%; left: 50%;
+    width: 280px; height: 280px; margin: -140px 0 0 -140px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,244,180,0.9);
+    box-shadow: 0 0 30px 6px rgba(255,225,120,0.75), inset 0 0 30px rgba(255,240,170,0.5);
+    z-index: 9998; pointer-events: none; opacity: 0;
+    animation: inf-halo-in 1.2s ease-out 2.2s forwards, inf-halo-pulse 3s ease-in-out 3.4s infinite alternate;
+  }
+  #inf-halo::before, #inf-halo::after {
+    content: ''; position: absolute; border-radius: 50%;
+    border: 2px solid rgba(255,244,180,0.6);
+    top: -22px; left: -22px; right: -22px; bottom: -22px;
+  }
+  #inf-halo::after { top: -46px; left: -46px; right: -46px; bottom: -46px; border-color: rgba(255,244,180,0.3); }
+  @keyframes inf-halo-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+  @keyframes inf-halo-pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+  #inf-particles {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 9998; pointer-events: none; overflow: hidden;
+  }
+  .inf-particle {
+    position: absolute; top: -20px; width: 6px; height: 6px; border-radius: 50%;
+    background: #fff8cc; box-shadow: 0 0 10px 3px rgba(255,230,140,0.9);
+    animation: inf-fall 6s linear infinite;
+  }
+  @keyframes inf-fall {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    10%  { opacity: 1; }
+    100% { transform: translateY(112vh) translateX(24px); opacity: 0; }
+  }
+  #inf-flash {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #ffffff; z-index: 10002; pointer-events: none;
+    animation: inf-flash-anim 1.8s ease-out forwards;
+  }
+  @keyframes inf-flash-anim { 0% { opacity: 1; } 100% { opacity: 0; } }
+  #cutin-main-title.infinity-title {
+    background: linear-gradient(180deg, #ffffff 0%, #fff2b3 50%, #ffc933 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1.5px #5a3b00;
+    font-size: clamp(20px, 6.5vw, 30px);
+    filter: drop-shadow(0 0 12px rgba(255,220,110,0.95)) drop-shadow(0 0 28px rgba(255,255,255,0.8));
+    animation: inf-descend 3.2s cubic-bezier(0.16, 0.84, 0.3, 1) both, inf-glow 2.4s ease-in-out 3.2s infinite;
+  }
+  @keyframes inf-descend {
+    0%   { transform: translateY(-75vh) scale(0.5); opacity: 0; }
+    35%  { opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  @keyframes inf-glow {
+    0%, 100% { filter: drop-shadow(0 0 10px rgba(255,220,110,0.9)) drop-shadow(0 0 22px rgba(255,255,255,0.6)); }
+    50%      { filter: drop-shadow(0 0 20px rgba(255,235,150,1)) drop-shadow(0 0 40px rgba(255,255,255,0.95)); }
+  }
+  .inf-fade { opacity: 0; animation: inf-fade-in 1.5s ease-out 2.6s forwards; }
+  @keyframes inf-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
   .board-form textarea {
     width: 100%;
@@ -1336,7 +1428,7 @@
     <span class="cabinet-icon">🎰</span>
     <p class="cabinet-title">3-6 ガチャ</p>
   </div>
-  <p class="cabinet-desc">ミニゲームで貯めたトークンでガチャを回して、全63種の図鑑をコンプリートしよう！</p>
+  <p class="cabinet-desc">ミニゲームで貯めたトークンでガチャを回して、全64種の図鑑をコンプリートしよう！</p>
   <div class="ticket-display">🎫 所持トークン: <span id="ticket-count">5</span> 枚</div>
   <p style="font-size:12px; color: var(--ink-dim); margin: -6px 0 4px 0;">🎰 みんなの総ガチャ回数: <span id="total-gacha-count">読み込み中...</span> 回</p>
   <p style="font-size:12px; color: var(--ink-dim); margin: 0 0 14px 0;">🙋 あなたの総ガチャ回数: <span id="my-gacha-count">0</span> 回</p>
@@ -1350,7 +1442,7 @@
   <div id="gacha-result" class="gacha-result-box" style="display:none;"></div>
 
   <div class="rarity-legend">
-    <span class="rarity-n">N 53.8829%</span>
+    <span class="rarity-n">N 53.88283%</span>
     <span class="rarity-r">R 35%</span>
     <span class="rarity-sr">SR 9%</span>
     <span class="rarity-ssr">SSR 2%</span>
@@ -1359,6 +1451,7 @@
     <span class="rarity-omegaplus">Ω+ 0.006%</span>
     <span class="rarity-god">GOD 0.001%</span>
     <span class="rarity-xerr">X-ERR 0.0001%</span>
+    <span class="rarity-infinity" style="font-size:11px; letter-spacing:0;">INFINITY 0.00007%</span>
   </div>
 
   <button class="arcade-btn btn-gold album-toggle-btn" onclick="toggleAlbum()" id="album-toggle-btn">📖 図鑑を見る</button>
@@ -1397,6 +1490,23 @@
   <div id="god-rays-2"></div>
   <div id="god-rings"><div class="god-ring"></div><div class="god-ring"></div><div class="god-ring"></div></div>
   <div id="god-strobe"></div>
+  <div id="inf-rays"></div>
+  <div id="inf-beam"></div>
+  <div id="inf-halo"></div>
+  <div id="inf-particles">
+    <div class="inf-particle" style="left:6%; animation-delay:0s;"></div>
+    <div class="inf-particle" style="left:15%; animation-delay:1.8s;"></div>
+    <div class="inf-particle" style="left:24%; animation-delay:0.7s;"></div>
+    <div class="inf-particle" style="left:33%; animation-delay:3.1s;"></div>
+    <div class="inf-particle" style="left:42%; animation-delay:1.2s;"></div>
+    <div class="inf-particle" style="left:51%; animation-delay:4.2s;"></div>
+    <div class="inf-particle" style="left:60%; animation-delay:2.4s;"></div>
+    <div class="inf-particle" style="left:69%; animation-delay:0.4s;"></div>
+    <div class="inf-particle" style="left:78%; animation-delay:3.6s;"></div>
+    <div class="inf-particle" style="left:87%; animation-delay:1.5s;"></div>
+    <div class="inf-particle" style="left:94%; animation-delay:2.9s;"></div>
+  </div>
+  <div id="inf-flash"></div>
   <div id="xerr-aura"></div>
   <div id="xerr-crack"></div>
   <div id="xerr-embers">
@@ -2828,10 +2938,11 @@
     { no: 60, rarity: 'Ω+', emoji: '🔥', name: '逆境無頼' },
     { no: 61, rarity: 'Ω', emoji: '📅', name: '明日は月曜日' },
     { no: 62, rarity: 'SSR', emoji: '🥋', name: '男塾' },
-    { no: 63, rarity: 'N', emoji: '🌵', name: 'シャボテンログ' }
+    { no: 63, rarity: 'N', emoji: '🌵', name: 'シャボテンログ' },
+    { no: 64, rarity: 'INFINITY', emoji: '♾️', name: 'End of Game' }
   ];
-  const RARITY_LEVEL = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4, 'Ω': 5, 'Ω+': 6, GOD: 7, 'X-ERR': 8 };
-  const RARITY_CLASS = { N: 'rarity-n', R: 'rarity-r', SR: 'rarity-sr', SSR: 'rarity-ssr', UR: 'rarity-ur', 'Ω': 'rarity-omega', 'Ω+': 'rarity-omegaplus', GOD: 'rarity-god', 'X-ERR': 'rarity-xerr' };
+  const RARITY_LEVEL = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4, 'Ω': 5, 'Ω+': 6, GOD: 7, 'X-ERR': 8, INFINITY: 9 };
+  const RARITY_CLASS = { N: 'rarity-n', R: 'rarity-r', SR: 'rarity-sr', SSR: 'rarity-ssr', UR: 'rarity-ur', 'Ω': 'rarity-omega', 'Ω+': 'rarity-omegaplus', GOD: 'rarity-god', 'X-ERR': 'rarity-xerr', INFINITY: 'rarity-infinity' };
 
   // ============================================================
   // 図鑑（所持カード）：localStorageで永続化。ページ移動・更新しても消えません。
@@ -2849,8 +2960,8 @@
 
   // レアリティの表示順と色。CARDSに新しいカードを追加するだけで
   // 図鑑・確率計算・演出すべてに自動で反映されます。
-  const RARITY_ORDER = ['N', 'R', 'SR', 'SSR', 'UR', 'Ω', 'Ω+', 'GOD', 'X-ERR'];
-  const RARITY_COLOR = { N: '#ffffff', R: '#00e676', SR: '#e040fb', SSR: '#00ffff', UR: '#ff3366', 'Ω': '#ff2b2b', 'Ω+': '#ff8800', GOD: '#ffff00', 'X-ERR': '#8b0000' };
+  const RARITY_ORDER = ['N', 'R', 'SR', 'SSR', 'UR', 'Ω', 'Ω+', 'GOD', 'X-ERR', 'INFINITY'];
+  const RARITY_COLOR = { N: '#ffffff', R: '#00e676', SR: '#e040fb', SSR: '#00ffff', UR: '#ff3366', 'Ω': '#ff2b2b', 'Ω+': '#ff8800', GOD: '#ffff00', 'X-ERR': '#8b0000', INFINITY: '#fff3b0' };
 
   function renderAlbum() {
     const grid = document.getElementById('album-grid');
@@ -2867,14 +2978,15 @@
       const cardsHtml = cardsInRarity.map(card => {
         const noStr = String(card.no).padStart(2, '0');
         const owned = !!ownedCards[card.no];
+        const extraCls = card.rarity === 'INFINITY' ? ' infinity' : '';
         if (owned) { ownedCount++; ownedInRarity++; }
         return owned
-          ? `<div class="album-cell owned" style="border-color:${color};">
+          ? `<div class="album-cell owned${extraCls}" style="border-color:${color};">
                <span class="no">No.${noStr}</span>
                <span class="emoji">${card.emoji}</span>
                <span class="name">${card.name}</span>
              </div>`
-          : `<div class="album-cell locked" style="border-color:${color};">
+          : `<div class="album-cell locked${extraCls}" style="border-color:${color};">
                <span class="no">No.${noStr}</span>
                <span class="emoji">？</span>
                <span class="name">未所持</span>
@@ -3197,6 +3309,11 @@
   }
 
   function pickCardByRand(rand) {
+    // INFINITY：0.00007%（他のレアリティの確率は変わらないよう、ここで先に切り出す）
+    if (rand < 0.00007) {
+      return CARDS.find(c => c.rarity === 'INFINITY');
+    }
+    rand -= 0.00007;
     let rarity;
     if (rand < 0.0001) rarity = 'X-ERR';
     else if (rand < 0.0011) rarity = 'GOD';
@@ -3259,6 +3376,28 @@
     }
   }
 
+  function setInfinityEffects(on) {
+    const overlay = document.getElementById('cutin-overlay');
+    const ids = ['inf-rays', 'inf-beam', 'inf-halo', 'inf-particles', 'inf-flash'];
+    const title = document.getElementById('cutin-main-title');
+    const sub = document.getElementById('cutin-sub-title');
+    const desc = document.getElementById('cutin-desc');
+    if (on) {
+      overlay.classList.add('inf-active');
+      ids.forEach(id => { document.getElementById(id).style.display = 'block'; });
+      title.classList.add('infinity-title');
+      sub.classList.add('inf-fade');
+      desc.classList.add('inf-fade');
+    } else {
+      overlay.classList.remove('inf-active');
+      ids.forEach(id => { document.getElementById(id).style.display = 'none'; });
+      title.classList.remove('infinity-title');
+      sub.classList.remove('inf-fade');
+      desc.classList.remove('inf-fade');
+    }
+  }
+
+  const INFINITY_LOCK_MS = 8000;
   const CUTIN_LOCK_MS = 5000;
   let cutinLockUntil = 0;
 
@@ -3313,7 +3452,18 @@
       }
       resultDiv.innerHTML = resultsHtml;
 
-      if (maxLevel === 8) {
+      setInfinityEffects(false);
+      if (maxLevel === 9) {
+        // INFINITY：天から神が降りてくる演出
+        setGodEffects(false);
+        setXerrEffects(false);
+        document.getElementById('cutin-sub-title').innerText = "✨✨✨ 天より神が降臨する ✨✨✨";
+        document.getElementById('cutin-main-title').innerText = `${topCard.emoji} INFINITY ${topCard.name}`;
+        document.getElementById('cutin-desc').innerText = "【0.00007%】ゲームは、ここで終わる。";
+        setInfinityEffects(true);
+        document.getElementById('cutin-overlay').style.display = 'flex';
+        cutinLockUntil = Date.now() + INFINITY_LOCK_MS;
+      } else if (maxLevel === 8) {
         // X-ERR：派手さより、赤黒く美しい異質な演出
         setGodEffects(false);
         document.getElementById('cutin-sub-title').innerText = "⚠ 規格外の異変を検知 ⚠";
@@ -3356,6 +3506,7 @@
     document.getElementById('cutin-overlay').style.display = 'none';
     setGodEffects(false);
     setXerrEffects(false);
+    setInfinityEffects(false);
   }
 
   // ============================================================
