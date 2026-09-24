@@ -1232,7 +1232,7 @@
     <span class="cabinet-icon">🎰</span>
     <p class="cabinet-title">3-6 ガチャ</p>
   </div>
-  <p class="cabinet-desc">ミニゲームで貯めたトークンでガチャを回して、全30種の図鑑をコンプリートしよう！</p>
+  <p class="cabinet-desc">ミニゲームで貯めたトークンでガチャを回して、全63種の図鑑をコンプリートしよう！</p>
   <div class="ticket-display">🎫 所持トークン: <span id="ticket-count">5</span> 枚</div>
   <p style="font-size:12px; color: var(--ink-dim); margin: -6px 0 4px 0;">🎰 みんなの総ガチャ回数: <span id="total-gacha-count">読み込み中...</span> 回</p>
   <p style="font-size:12px; color: var(--ink-dim); margin: 0 0 14px 0;">🙋 あなたの総ガチャ回数: <span id="my-gacha-count">0</span> 回</p>
@@ -1468,8 +1468,11 @@
 
     if (!missionStats.reactionCleared) {
       missionStats.reactionCleared = true;
-      saveMissionStats();
     }
+    if (missionStats.reactionBestAvg === null || avg < missionStats.reactionBestAvg) {
+      missionStats.reactionBestAvg = avg;
+    }
+    saveMissionStats();
 
     let earned = 0;
     let msg = `平均反応速度: ${avg}ms`;
@@ -2032,6 +2035,7 @@
     if (earned > 0) updateTickets(earned);
 
     missionStats.runnerTotalSeconds = (missionStats.runnerTotalSeconds || 0) + runnerElapsed;
+    if (runnerElapsed > (missionStats.runnerBestSeconds || 0)) missionStats.runnerBestSeconds = runnerElapsed;
     saveMissionStats();
 
     document.getElementById('runner-result').innerHTML =
@@ -2613,7 +2617,15 @@
     { no: 52, rarity: 'Ω+', emoji: '🤓', name: 'おっほーい' },
     { no: 53, rarity: 'Ω+', emoji: '👨\u200d🦱', name: 'やるねェ' },
     { no: 54, rarity: 'SR', emoji: '🤖', name: '高性能ロボ' },
-    { no: 55, rarity: 'N', emoji: '🎤', name: '無能マイク' }
+    { no: 55, rarity: 'N', emoji: '🎤', name: '無能マイク' },
+    { no: 56, rarity: 'GOD', emoji: '🕵️', name: '幻の不審者' },
+    { no: 57, rarity: 'GOD', emoji: '🌈', name: 'ハッピーエンド' },
+    { no: 58, rarity: 'Ω+', emoji: '🗿', name: '柏っしょ井' },
+    { no: 59, rarity: 'Ω+', emoji: '💪', name: '肉体改造飯食え' },
+    { no: 60, rarity: 'Ω+', emoji: '🔥', name: '逆境無頼' },
+    { no: 61, rarity: 'Ω', emoji: '📅', name: '明日は月曜日' },
+    { no: 62, rarity: 'SSR', emoji: '🥋', name: '男塾' },
+    { no: 63, rarity: 'N', emoji: '🌵', name: 'シャボテンログ' }
   ];
   const RARITY_LEVEL = { N: 0, R: 1, SR: 2, SSR: 3, UR: 4, 'Ω': 5, 'Ω+': 6, GOD: 7, 'X-ERR': 8 };
   const RARITY_CLASS = { N: 'rarity-n', R: 'rarity-r', SR: 'rarity-sr', SSR: 'rarity-ssr', UR: 'rarity-ur', 'Ω': 'rarity-omega', 'Ω+': 'rarity-omegaplus', GOD: 'rarity-god', 'X-ERR': 'rarity-xerr' };
@@ -3111,16 +3123,8 @@
         setGodEffects(true);
         document.getElementById('cutin-overlay').style.display = 'flex';
         cutinLockUntil = Date.now() + CUTIN_LOCK_MS;
-      } else if (maxLevel === 4) {
-        setGodEffects(false);
-        setXerrEffects(false);
-        document.getElementById('cutin-sub-title').innerText = "🌟🌟🌟 激レア降臨 🌟🌟🌟";
-        document.getElementById('cutin-main-title').innerText = `⚡ UR ${topCard.name} ⚡`;
-        document.getElementById('cutin-desc').innerText = "【0.1%】激レアリティを獲得！！";
-        document.getElementById('cutin-overlay').style.display = 'flex';
-        cutinLockUntil = Date.now() + CUTIN_LOCK_MS;
       }
-      // SSR(3)以下は特別な演出なし。結果一覧にだけ表示されます。
+      // UR(4)以下は特別な演出なし。結果一覧にだけ表示されます。
     }, 500);
   }
 
@@ -3142,6 +3146,8 @@
   missionStats.boardPosted = missionStats.boardPosted || false;
   missionStats.tensecBestDiff = (typeof missionStats.tensecBestDiff === 'number') ? missionStats.tensecBestDiff : null;
   missionStats.runnerTotalSeconds = missionStats.runnerTotalSeconds || 0;
+  missionStats.reactionBestAvg = (typeof missionStats.reactionBestAvg === 'number') ? missionStats.reactionBestAvg : null;
+  missionStats.runnerBestSeconds = missionStats.runnerBestSeconds || 0;
 
   function saveMissionStats() {
     localStorage.setItem('missionStats', JSON.stringify(missionStats));
@@ -3161,7 +3167,24 @@
     { id: 'm8',  title: 'じゃんけん5連勝', desc: 'じゃんけん対決で5連勝する',                   reward: 800,   check: () => jankenBest >= 5 },
     { id: 'm9',  title: '図鑑コレクター', desc: '図鑑のカードを10種類集める',                   reward: 1200,  check: () => Object.values(ownedCards).filter(Boolean).length >= 10 },
     { id: 'm10', title: 'レアハンター',   desc: 'SR以上のレアカードを1枚手に入れる',           reward: 2000,  check: () => CARDS.some(c => ownedCards[c.no] && RARITY_LEVEL[c.rarity] >= 2) },
-    { id: 'm11', title: '障害物ゲーム60分', desc: '障害物ゲームを合計60分プレイする（生存時間の合計）', reward: 60000, check: () => missionStats.runnerTotalSeconds >= 3600 }
+    { id: 'm11', title: '障害物ゲーム60分', desc: '障害物ゲームを合計60分プレイする（生存時間の合計）', reward: 60000, check: () => missionStats.runnerTotalSeconds >= 3600 },
+    { id: 'm12', title: '連打70回',       desc: '連打チャレンジで1回に70回以上タップする',       reward: 500,   check: () => missionStats.rendaMax >= 70 },
+    { id: 'm13', title: '連打100回',      desc: '連打チャレンジで1回に100回以上タップする',      reward: 1500,  check: () => missionStats.rendaMax >= 100 },
+    { id: 'm14', title: '連打160回',      desc: '連打チャレンジで1回に160回以上タップする',      reward: 5000,  check: () => missionStats.rendaMax >= 160 },
+    { id: 'm15', title: '反射神経の達人', desc: '反射神経チャレンジで平均350ms未満を出す',       reward: 500,   check: () => missionStats.reactionBestAvg !== null && missionStats.reactionBestAvg < 350 },
+    { id: 'm16', title: '神の反射神経',   desc: '反射神経チャレンジで平均250ms未満を出す',       reward: 3000,  check: () => missionStats.reactionBestAvg !== null && missionStats.reactionBestAvg < 250 },
+    { id: 'm17', title: '10秒の名人',     desc: '10秒チャレンジで誤差0.05秒未満を出す',          reward: 1500,  check: () => missionStats.tensecBestDiff !== null && missionStats.tensecBestDiff < 0.05 },
+    { id: 'm18', title: '10秒の神',       desc: '10秒チャレンジで誤差0.01秒未満を出す',          reward: 8000,  check: () => missionStats.tensecBestDiff !== null && missionStats.tensecBestDiff < 0.01 },
+    { id: 'm19', title: 'じゃんけん10連勝', desc: 'じゃんけん対決で10連勝する',                   reward: 5000,  check: () => jankenBest >= 10 },
+    { id: 'm20', title: '障害物30秒生存', desc: '障害物ゲームで1回に30秒以上生き残る',           reward: 500,   check: () => missionStats.runnerBestSeconds >= 30 },
+    { id: 'm21', title: '障害物60秒生存', desc: '障害物ゲームで1回に60秒以上生き残る',           reward: 3000,  check: () => missionStats.runnerBestSeconds >= 60 },
+    { id: 'm22', title: 'ガチャ100回',    desc: '累計でガチャを100回引く',                       reward: 1000,  check: () => myGachaCount >= 100 },
+    { id: 'm23', title: 'ガチャ1000回',   desc: '累計でガチャを1000回引く',                      reward: 10000, check: () => myGachaCount >= 1000 },
+    { id: 'm24', title: '図鑑30種',       desc: '図鑑のカードを30種類集める',                    reward: 5000,  check: () => Object.values(ownedCards).filter(Boolean).length >= 30 },
+    { id: 'm25', title: '図鑑コンプリート', desc: '図鑑のカードを全種類集める',                  reward: 50000, check: () => CARDS.every(c => ownedCards[c.no]) },
+    { id: 'm26', title: 'Ωハンター',      desc: 'Ω以上のカードを1枚手に入れる',                  reward: 10000, check: () => CARDS.some(c => ownedCards[c.no] && RARITY_LEVEL[c.rarity] >= 5) },
+    { id: 'm27', title: '神を引く者',     desc: 'GOD以上のカードを1枚手に入れる',                reward: 30000, check: () => CARDS.some(c => ownedCards[c.no] && RARITY_LEVEL[c.rarity] >= 7) },
+    { id: 'm28', title: '規格外',         desc: 'X-ERRのカードを1枚手に入れる',                  reward: 100000, check: () => CARDS.some(c => ownedCards[c.no] && RARITY_LEVEL[c.rarity] >= 8) }
   ];
 
   function renderMissions() {
