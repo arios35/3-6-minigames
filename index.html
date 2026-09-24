@@ -3068,6 +3068,7 @@
     let maxLevel = -1;
     let topCard = null;
     let resultsHtml = "";
+    let omittedCount = 0;
 
     setTimeout(() => {
       for (let i = 0; i < times; i++) {
@@ -3078,7 +3079,12 @@
 
         const cls = RARITY_CLASS[card.rarity];
         const noStr = String(card.no).padStart(2, '0');
-        resultsHtml += `<div class="${cls}">【${card.rarity}】No.${noStr} ${card.emoji} ${card.name}${isNew ? ' 【NEW!】' : ''}</div>`;
+        // 1000連のときは長すぎるので、SR以上だけ表示（N・Rも図鑑にはちゃんと登録されます）
+        if (times < 1000 || RARITY_LEVEL[card.rarity] >= 2) {
+          resultsHtml += `<div class="${cls}">【${card.rarity}】No.${noStr} ${card.emoji} ${card.name}${isNew ? ' 【NEW!】' : ''}</div>`;
+        } else {
+          omittedCount++;
+        }
 
         const level = RARITY_LEVEL[card.rarity];
         if (level > maxLevel) {
@@ -3089,6 +3095,9 @@
 
       saveAlbum();
       renderAlbum();
+      if (times >= 1000) {
+        resultsHtml = `<div style="font-size:12px; color: var(--ink-dim); margin-bottom:6px;">※長いので SR 以上のみ表示（N・R は ${omittedCount} 枚出ています）</div>` + resultsHtml;
+      }
       resultDiv.innerHTML = resultsHtml;
 
       if (maxLevel === 8) {
