@@ -1730,10 +1730,10 @@
     // 🛠️ 隠しコマンド：開発者モード
     if (rawValue === '01203535') {
       numberGameActive = false;
-      updateTickets(1000);
+      updateTickets(100000);
       isDevMode = true;
       document.getElementById('number-feedback').innerText = '🛠️ 開発者コード認証！';
-      document.getElementById('number-result').innerHTML = '🎉 隠しコマンド成功！<br>🎫 トークンを1000枚GET！<br>🗑️ 掲示板の削除権限が付与されました！';
+      document.getElementById('number-result').innerHTML = '🎉 隠しコマンド成功！<br>🎫 トークンを100000枚GET！<br>🗑️ 掲示板の削除権限が付与されました！';
       document.getElementById('number-input').disabled = true;
       document.getElementById('number-guess-btn').disabled = true;
       input.value = '';
