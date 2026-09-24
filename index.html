@@ -1256,7 +1256,7 @@
     <span class="cabinet-icon">⏱️</span>
     <p class="cabinet-title">10秒チャレンジ</p>
   </div>
-  <p class="cabinet-desc">スタートを押してからストップを押すまでの時間が「10.000秒」にどれだけ近いかを競うゲーム！誤差が小さいほど高得点。</p>
+  <p class="cabinet-desc">スタートを押してからストップを押すまでの時間が「10.000秒」にどれだけ近いかを競うゲーム！誤差が小さいほど高得点。表示が「10.000」でピッタリ止めたら3000枚！</p>
 
   <div class="tensec-display">
     <span class="value" id="tensec-value">0.000</span><span class="unit">秒</span>
@@ -1285,7 +1285,7 @@
     <span class="cabinet-icon">🔢</span>
     <p class="cabinet-title">数当てゲーム</p>
   </div>
-  <p class="cabinet-desc">コンピュータが決めた1〜100の数字を当てよう！少ない回数で当てるほど高得点。一発正解なら300枚！</p>
+  <p class="cabinet-desc">コンピュータが決めた1〜100の数字を当てよう！少ない回数で当てるほど高得点。一発正解なら2000枚！</p>
   <button id="number-start-btn" class="arcade-btn btn-purple" style="width:100%;" onclick="startNumberGame()">スタート！！</button>
   <div class="number-input-row" style="margin-top:12px;">
     <input type="text" inputmode="numeric" pattern="[0-9]*" id="number-input" class="number-input" placeholder="1〜100" maxlength="10" disabled>
@@ -1746,7 +1746,8 @@
       }
       let earned = 0;
       let msg = `記録: ${elapsedSec.toFixed(3)}秒（誤差 ${diff.toFixed(3)}秒）`;
-      if (diff < 0.005)      { earned = 100; msg += ' 👑 神業！！'; }
+      if (elapsedSec.toFixed(3) === '10.000') { earned = 3000; msg += ' 🌈 ピッタリ！！！奇跡！！'; }
+      else if (diff < 0.005) { earned = 100; msg += ' 👑 神業！！'; }
       else if (diff < 0.015) { earned = 60;  msg += ' 🔥 超精密！'; }
       else if (diff < 0.03)  { earned = 35;  msg += ' ✨ かなり正確！'; }
       else if (diff < 0.05)  { earned = 20;  msg += ' 🏆 ナイス！'; }
@@ -1864,7 +1865,7 @@
         missionStats.numberSolved = true;
         saveMissionStats();
       }
-      const reward = Math.max(2, Math.floor(300 / Math.pow(2, guessAttempts - 1)));
+      const reward = (guessAttempts === 1) ? 2000 : Math.max(2, Math.floor(300 / Math.pow(2, guessAttempts - 1)));
       updateTickets(reward);
       document.getElementById('number-feedback').innerText = `🎉 正解！答えは${secretNumber}でした！`;
       document.getElementById('number-result').innerHTML = `${guessAttempts}回で正解！<br>🎫 トークンを${reward}枚GET！`;
