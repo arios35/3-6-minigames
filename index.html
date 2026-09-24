@@ -82,6 +82,39 @@
     --bg-panel: #6b1f5e;
   }
 
+  /* X-ERR 解放テーマ：ダークサイドの壁紙 */
+  body.theme-xerr {
+    --bg-grad-start: #2b0000;
+    --bg-deep: #0a0000;
+    --bg-grad-end: #000000;
+    --bg-panel: #1a0505;
+    --pink: #b3122a;
+    --cyan: #c43b3b;
+    --purple: #8a2a2a;
+    --gold: #e0a0a0;
+    --ink-dim: #b08a8a;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(139,0,0,0.55) 0%, rgba(20,0,0,0) 55%),
+      radial-gradient(circle at 50% 100%, rgba(90,0,0,0.5) 0%, rgba(0,0,0,0) 60%),
+      #050000;
+  }
+  body.theme-xerr::before {
+    content: '';
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1; pointer-events: none;
+    background:
+      linear-gradient(105deg, transparent 47.6%, rgba(160,0,0,0.55) 48%, rgba(160,0,0,0.55) 48.4%, transparent 48.8%),
+      linear-gradient(72deg, transparent 63.6%, rgba(120,0,0,0.45) 64%, rgba(120,0,0,0.45) 64.3%, transparent 64.7%),
+      linear-gradient(15deg, transparent 29.6%, rgba(160,0,0,0.4) 30%, rgba(160,0,0,0.4) 30.3%, transparent 30.7%),
+      radial-gradient(circle at 50% 45%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.85) 100%);
+    animation: xerr-wall-flicker 5s ease-in-out infinite;
+  }
+  @keyframes xerr-wall-flicker {
+    0%, 90%, 100% { opacity: 0.75; }
+    93% { opacity: 0.35; }
+    96% { opacity: 1; }
+  }
+
   a.back-link {
     display: inline-block;
     color: var(--ink-dim);
@@ -701,9 +734,9 @@
   }
   @keyframes god-strobe-flash { 0% {opacity:0;} 15% {opacity:0.35;} 30% {opacity:0;} 100% {opacity:0;} }
   .cutin-text-panel { display: inline-block; background: rgba(0,0,0,0.5); padding: 6px 22px; border-radius: 30px; }
-  .cutin-content { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 10000; width: 100%; pointer-events: none; }
+  .cutin-content { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 10000; width: 100%; padding: 0 12px; box-sizing: border-box; pointer-events: none; }
   #cutin-main-title {
-    font-size: 46px; font-weight: 900; margin: 15px 0; white-space: nowrap;
+    font-size: clamp(20px, 6.5vw, 30px); font-weight: 900; margin: 15px 0; white-space: normal; word-break: break-word; line-height: 1.3;
     background: linear-gradient(180deg, #ffffff 0%, #ffff00 40%, #ff8800 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     -webkit-text-stroke: 2.5px #6a0000;
@@ -771,8 +804,8 @@
   }
   #cutin-main-title.xerr-title {
     font-family: 'Cinzel', serif;
-    font-size: 40px;
-    letter-spacing: 2px;
+    font-size: clamp(18px, 6vw, 28px);
+    letter-spacing: 1px;
     background: linear-gradient(180deg, #ff5252 0%, #8b0000 55%, #200000 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     -webkit-text-stroke: 1.5px #000000;
@@ -2879,8 +2912,14 @@
     { id: 'inferno',  emoji: '🔥', name: 'インフェルノ', price: 3500, className: 'theme-inferno' },
     { id: 'forest',   emoji: '🌲', name: 'フォレスト',   price: 1500, className: 'theme-forest' },
     { id: 'midnight', emoji: '🌙', name: 'ミッドナイト', price: 2500, className: 'theme-midnight' },
-    { id: 'candy',    emoji: '🍬', name: 'キャンディ',   price: 4000, className: 'theme-candy' }
+    { id: 'candy',    emoji: '🍬', name: 'キャンディ',   price: 4000, className: 'theme-candy' },
+    { id: 'xerr',     emoji: '🩸', name: 'X-ERR 闇の壁紙', price: 0,  className: 'theme-xerr', requiresRarity: 'X-ERR' }
   ];
+
+  // 指定レアリティのカードを1枚でも持っているか
+  function hasOwnedRarity(r) {
+    return CARDS.some(c => c.rarity === r && ownedCards[c.no]);
+  }
   const SHOP_SKINS = [
     { id: 'default',    emoji: '🏃\u200d➡️',        name: '初期スキン',           price: 0 },
     { id: 'runner_f',    emoji: '🏃‍♀️‍➡️',        name: '走る女性',             price: 1500 },
@@ -2946,7 +2985,8 @@
   function renderShopThemes() {
     const container = document.getElementById('shop-theme-list');
     container.innerHTML = SHOP_THEMES.map(theme => {
-      const owned = theme.id === 'default' || purchasedThemes.includes(theme.id);
+      const locked = !!theme.requiresRarity && !hasOwnedRarity(theme.requiresRarity);
+      const owned = theme.id === 'default' || purchasedThemes.includes(theme.id) || (!!theme.requiresRarity && !locked);
       const equipped = equippedThemeId === theme.id;
       let actionHtml;
       if (equipped) {
@@ -2954,14 +2994,16 @@
       } else if (owned) {
         actionHtml = `<button class="arcade-btn btn-indigo shop-buy-btn" onclick="equipTheme('${theme.id}')">適用する</button>`;
       } else {
-        actionHtml = `<button class="arcade-btn btn-indigo shop-buy-btn" onclick="buyTheme('${theme.id}')">購入</button>`;
+        actionHtml = locked
+          ? `<span class="shop-owned-label">🔒 ${theme.requiresRarity}を入手すると解放</span>`
+          : `<button class="arcade-btn btn-indigo shop-buy-btn" onclick="buyTheme('${theme.id}')">購入</button>`;
       }
       return `<div class="shop-item">
         <div class="shop-item-info">
           <span class="shop-item-emoji">${theme.emoji}</span>
           <div>
             <div class="shop-item-name">${theme.name}</div>
-            <div class="shop-item-price">${theme.price === 0 ? '無料' : theme.price.toLocaleString() + '枚'}</div>
+            <div class="shop-item-price">${theme.requiresRarity ? (locked ? '？？？' : '無料（X-ERR特典）') : (theme.price === 0 ? '無料' : theme.price.toLocaleString() + '枚')}</div>
           </div>
         </div>
         ${actionHtml}
@@ -2982,6 +3024,7 @@
   function equipTheme(id) {
     const theme = SHOP_THEMES.find(t => t.id === id);
     if (!theme) return;
+    if (theme.requiresRarity && !hasOwnedRarity(theme.requiresRarity)) return;
     document.body.className = theme.className;
     equippedThemeId = id;
     localStorage.setItem('equippedThemeId', id);
@@ -3263,6 +3306,7 @@
 
       saveAlbum();
       renderAlbum();
+      renderShopThemes();
       if (times >= 1000) {
         resultsHtml = `<div style="font-size:12px; color: var(--ink-dim); margin-bottom:6px;">※長いので SR 以上のみ表示（N・R は ${omittedCount} 枚出ています）</div>` + resultsHtml;
       }
