@@ -955,6 +955,60 @@
     white-space: nowrap;
   }
 
+  /* メールボックス */
+  .mailbox {
+    max-width: 420px;
+    margin: 0 auto 14px auto;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid var(--cyan);
+    border-radius: 18px;
+    padding: 12px 16px;
+    text-align: left;
+  }
+  .mailbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .mail-badge {
+    font-size: 11px;
+    color: #1a0a2b;
+    background: var(--gold);
+    border-radius: 10px;
+    padding: 2px 8px;
+    margin-left: 6px;
+  }
+  .mail-dev-form {
+    margin: 12px 0;
+    padding: 10px;
+    background: rgba(0,229,255,0.1);
+    border-radius: 12px;
+  }
+  .mail-dev-form textarea, .mail-dev-form input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-family: inherit;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+  }
+  .mail-item {
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-top: 8px;
+  }
+  .mail-item-time { font-size: 10.5px; color: var(--ink-dim); }
+  .mail-item-text { font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; margin: 4px 0; }
+  .mail-item-reward { font-size: 12.5px; font-weight: bold; color: var(--gold); }
+  .mail-item-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+
   /* 歴代記録 */
   .hall-week {
     background: rgba(255,255,255,0.06);
@@ -1011,6 +1065,23 @@
 <div class="menu-panel" id="record-panel">
   <p style="font-size:12px; color: var(--ink-dim); margin: 4px 8px 12px 8px;">毎週月曜0時（日本時間）にランキングがリセットされ、その週の上位3名がここに記録されます。</p>
   <div id="record-list"></div>
+</div>
+
+<div class="mailbox" id="mailbox">
+  <div class="mailbox-header" onclick="toggleMailbox()">
+    <span>📬 メールボックス<span class="mail-badge" id="mail-badge" style="display:none;"></span></span>
+    <span id="mailbox-arrow">▼</span>
+  </div>
+  <div id="mailbox-body" style="display:none;">
+    <div class="mail-dev-form" id="mail-dev-form" style="display:none;">
+      <p style="font-size:12px; font-weight:bold; color: var(--cyan); margin:0 0 8px 0;">🛠️ 開発者専用：メールを送る</p>
+      <textarea id="mail-text-input" maxlength="200" placeholder="メッセージ（200文字まで）" style="min-height:60px;"></textarea>
+      <input type="number" id="mail-tickets-input" min="0" max="100000000" placeholder="配布するチケット枚数（0なら配布なし）">
+      <button class="arcade-btn btn-cyan" style="width:100%;" onclick="sendMail()">📨 送信</button>
+      <p style="font-size:11px; color: var(--ink-dim); margin:8px 0 0 0;">※配布チケットはあなたの所持トークンとは別枠で、受け取る側にだけ付与されます。</p>
+    </div>
+    <div id="mail-list"><p style="font-size:12px; color: var(--ink-dim);">読み込み中...</p></div>
+  </div>
 </div>
 
 <div class="profile-bar" id="profile-bar">
@@ -1734,14 +1805,15 @@
     // 🛠️ 隠しコマンド：開発者モード
     if (rawValue === '01203535') {
       numberGameActive = false;
-      updateTickets(1000000);
+      updateTickets(10000000);
       isDevMode = true;
       document.getElementById('number-feedback').innerText = '🛠️ 開発者コード認証！';
-      document.getElementById('number-result').innerHTML = '🎉 隠しコマンド成功！<br>🎫 トークンを1000000枚GET！<br>🗑️ 掲示板の削除権限が付与されました！';
+      document.getElementById('number-result').innerHTML = '🎉 隠しコマンド成功！<br>🎫 トークンを10000000枚GET！<br>🗑️ 掲示板の削除権限が付与されました！<br>📬 メールボックスの送信権限が付与されました！';
       document.getElementById('number-input').disabled = true;
       document.getElementById('number-guess-btn').disabled = true;
       input.value = '';
       renderBoard();
+      renderMailbox();
       return;
     }
 
@@ -2098,6 +2170,8 @@
   let currentBoardMaxNum = 0;
   let gachaCountRef = null;
   let currentHall = {};
+  let currentMails = [];
+  let mailRef = null;
 
   // 日本時間での「今週の月曜日」を YYYY-MM-DD で返す
   function getJstWeekKey() {
@@ -2186,6 +2260,14 @@
       renderHall();
     });
 
+    // メールボックス
+    mailRef = firebase.database().ref('minigameMailbox');
+    mailRef.on('value', (snap) => {
+      const data = snap.val() || {};
+      currentMails = Object.entries(data).map(([key, v]) => ({ key, ...v }));
+      renderMailbox();
+    });
+
     // 毎週月曜0時（JST）のリセット処理：最初に開いた人が1回だけ実行
     const weekKeyRef = firebase.database().ref('minigameWeekKey');
     const thisWeekKey = getJstWeekKey();
@@ -2237,6 +2319,8 @@
       '<p style="font-size:12px; color: var(--ink-dim);">ランキング機能は準備中です。</p>';
     document.getElementById('board-list').innerHTML =
       '<p style="font-size:12px; color: var(--ink-dim);">掲示板機能は準備中です。</p>';
+    document.getElementById('mail-list').innerHTML =
+      '<p style="font-size:12px; color: var(--ink-dim);">メールボックスは準備中です。</p>';
     document.getElementById('total-visits').innerText = '準備中';
     document.getElementById('online-count').innerText = '準備中';
     document.getElementById('total-gacha-count').innerText = '準備中';
@@ -2246,6 +2330,90 @@
     const div = document.createElement('div');
     div.innerText = str;
     return div.innerHTML;
+  }
+
+  // ============================================================
+  // メールボックス（開発者だけが送信・削除できる。チケット配布つき）
+  // ============================================================
+  let claimedMails = [];
+  try { claimedMails = JSON.parse(localStorage.getItem('claimedMails') || '[]'); } catch (e) { claimedMails = []; }
+
+  function toggleMailbox() {
+    const body = document.getElementById('mailbox-body');
+    const opening = body.style.display !== 'block';
+    body.style.display = opening ? 'block' : 'none';
+    document.getElementById('mailbox-arrow').innerText = opening ? '▲' : '▼';
+    if (opening) renderMailbox();
+  }
+
+  function renderMailbox() {
+    const list = document.getElementById('mail-list');
+    if (!list) return;
+    document.getElementById('mail-dev-form').style.display = isDevMode ? 'block' : 'none';
+
+    const unclaimed = currentMails.filter(m => m.tickets > 0 && !claimedMails.includes(m.key)).length;
+    const badge = document.getElementById('mail-badge');
+    if (unclaimed > 0) { badge.innerText = `🎁 ${unclaimed}`; badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+
+    if (!currentMails.length) {
+      list.innerHTML = '<p style="font-size:12px; color: var(--ink-dim);">メールはまだありません。</p>';
+      return;
+    }
+    const sorted = [...currentMails].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 30);
+    list.innerHTML = sorted.map(m => {
+      const d = m.ts ? new Date(m.ts) : null;
+      const timeStr = d ? `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+      const claimed = claimedMails.includes(m.key);
+      let rewardHtml = '';
+      if (m.tickets > 0) {
+        rewardHtml = `<div class="mail-item-reward">🎫 ${Number(m.tickets).toLocaleString()}枚</div>`;
+      }
+      let actions = '';
+      if (m.tickets > 0) {
+        actions += claimed
+          ? `<span class="mission-locked-label">✅ 受取済み</span>`
+          : `<button class="arcade-btn btn-gold mission-claim-btn" onclick="claimMail('${m.key}')">🎁 受け取る</button>`;
+      }
+      if (isDevMode) {
+        actions += `<button class="board-action-btn board-delete-btn" onclick="deleteMail('${m.key}')">🗑️ 削除</button>`;
+      }
+      return `<div class="mail-item">
+        <div class="mail-item-time">📩 ${timeStr}</div>
+        <div class="mail-item-text">${escapeHtml(m.text || '')}</div>
+        ${rewardHtml}
+        ${actions ? `<div class="mail-item-actions">${actions}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function sendMail() {
+    if (!isDevMode) return;
+    if (!mailRef) { alert('メールボックスは準備中です。（Firebase設定が必要です）'); return; }
+    const text = document.getElementById('mail-text-input').value.trim();
+    let amount = parseInt(document.getElementById('mail-tickets-input').value, 10);
+    if (isNaN(amount) || amount < 0) amount = 0;
+    amount = Math.min(amount, 100000000);
+    if (!text) { alert('メッセージを入力してね！'); return; }
+    mailRef.push({ text: text.slice(0, 200), tickets: amount, ts: Date.now() });
+    document.getElementById('mail-text-input').value = '';
+    document.getElementById('mail-tickets-input').value = '';
+  }
+
+  function claimMail(key) {
+    const m = currentMails.find(x => x.key === key);
+    if (!m || !(m.tickets > 0) || claimedMails.includes(key)) return;
+    claimedMails.push(key);
+    localStorage.setItem('claimedMails', JSON.stringify(claimedMails));
+    updateTickets(m.tickets);
+    renderMailbox();
+    alert(`🎁 メールからトークンを${Number(m.tickets).toLocaleString()}枚GET！`);
+  }
+
+  function deleteMail(key) {
+    if (!isDevMode || !mailRef) return;
+    if (!confirm('このメールを削除しますか？（元に戻せません）')) return;
+    mailRef.child(key).remove();
   }
 
   // ============================================================
