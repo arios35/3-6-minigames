@@ -3328,14 +3328,12 @@
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
-  // 開発者モード専用：Ω以上（Ω / Ω+ / GOD / X-ERR）のみが出る抽選
-  // 元の確率比（0.01 / 0.006 / 0.001 / 0.0001）を保ったまま100%に正規化
+  // 開発者モード専用：GOD以上（GOD / X-ERR）のみが出る抽選
+  // 元の確率比（0.001 / 0.0001）を保ったまま100%に正規化
   function pickCardByRandDevMode(rand) {
     let rarity;
-    if (rand < 0.58) rarity = 'X-ERR';
-    else if (rand < 6.43) rarity = 'GOD';
-    else if (rand < 41.52) rarity = 'Ω+';
-    else rarity = 'Ω';
+    if (rand < 9.09) rarity = 'X-ERR';
+    else rarity = 'GOD';
     const pool = CARDS.filter(c => c.rarity === rarity);
     return pool[Math.floor(Math.random() * pool.length)];
   }
