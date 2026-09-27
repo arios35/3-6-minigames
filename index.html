@@ -709,7 +709,8 @@
     justify-content: center; align-items: center; flex-direction: column;
     text-align: center; padding: 20px; box-sizing: border-box; overflow: hidden;
   }
-  #cutin-overlay { cursor: pointer; }
+  #cutin-overlay { cursor: pointer; opacity: 1; transition: opacity 1.4s ease; }
+#cutin-overlay.inf-closing { opacity: 0; cursor: default; }
   #cutin-overlay.god-active {
     background: radial-gradient(circle at center, rgba(20,0,0,0.55) 0%, rgba(0,0,0,0.92) 75%);
   }
@@ -743,9 +744,9 @@
   }
   @keyframes god-strobe-flash { 0% {opacity:0;} 15% {opacity:0.35;} 30% {opacity:0;} 100% {opacity:0;} }
   .cutin-text-panel { display: inline-block; background: rgba(0,0,0,0.5); padding: 6px 22px; border-radius: 30px; }
-  .cutin-content { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 10000; width: 100%; padding: 0 12px; box-sizing: border-box; pointer-events: none; }
+  .cutin-content { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 10000; width: 100%; padding: 0 16px; box-sizing: border-box; pointer-events: none; }
   #cutin-main-title {
-    font-size: clamp(20px, 6.5vw, 30px); font-weight: 900; margin: 15px 0; white-space: normal; word-break: break-word; line-height: 1.3;
+    font-size: clamp(20px, 6.5vw, 30px); font-weight: 900; margin: 15px 0; white-space: normal; word-break: keep-all; overflow-wrap: break-word; line-height: 1.35;
     background: linear-gradient(180deg, #ffffff 0%, #ffff00 40%, #ff8800 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     -webkit-text-stroke: 2.5px #6a0000;
@@ -815,6 +816,8 @@
     font-family: 'Cinzel', serif;
     font-size: clamp(18px, 6vw, 28px);
     letter-spacing: 1px;
+    word-break: keep-all;
+    overflow-wrap: break-word;
     background: linear-gradient(180deg, #ff5252 0%, #8b0000 55%, #200000 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     -webkit-text-stroke: 1.5px #000000;
@@ -908,6 +911,29 @@
   }
   .inf-fade { opacity: 0; animation: inf-fade-in 1.5s ease-out 2.6s forwards; }
   @keyframes inf-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* INFINITY：タップして閉じたあとに残る余韻 */
+  .infinity-afterglow {
+    display: none;
+    position: fixed; left: 0; right: 0; bottom: 22px;
+    z-index: 9995; pointer-events: none;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 2.2s ease;
+  }
+  .infinity-afterglow.show { opacity: 1; }
+  .infinity-afterglow span {
+    display: inline-block;
+    padding: 10px 24px;
+    border-radius: 30px;
+    background: rgba(20,14,0,0.55);
+    border: 1px solid rgba(255,224,140,0.45);
+    color: #ffe9b0;
+    font-size: 12.5px;
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 10px rgba(255,220,120,0.8);
+    box-shadow: 0 0 22px rgba(255,210,110,0.35);
+  }
 
   .board-form textarea {
     width: 100%;
@@ -1442,7 +1468,7 @@
   <div id="gacha-result" class="gacha-result-box" style="display:none;"></div>
 
   <div class="rarity-legend">
-    <span class="rarity-n">N 53.88283%</span>
+    <span class="rarity-n">N 53.882815%</span>
     <span class="rarity-r">R 35%</span>
     <span class="rarity-sr">SR 9%</span>
     <span class="rarity-ssr">SSR 2%</span>
@@ -1451,7 +1477,7 @@
     <span class="rarity-omegaplus">Ω+ 0.006%</span>
     <span class="rarity-god">GOD 0.001%</span>
     <span class="rarity-xerr">X-ERR 0.0001%</span>
-    <span class="rarity-infinity" style="font-size:11px; letter-spacing:0;">INFINITY 0.00007%</span>
+    <span class="rarity-infinity" style="font-size:11px; letter-spacing:0;">INFINITY 0.000085%</span>
   </div>
 
   <button class="arcade-btn btn-gold album-toggle-btn" onclick="toggleAlbum()" id="album-toggle-btn">📖 図鑑を見る</button>
@@ -1526,6 +1552,7 @@
     <p style="font-size:14px; color:#fff; margin-top:35px; background:rgba(0,0,0,0.7); display:inline-block; padding:8px 20px; border-radius:20px; border:1px solid #fff;">（タップして結果を確認する）</p>
   </div>
 </div>
+<div id="infinity-afterglow" class="infinity-afterglow"><span>♾️ INFINITY の余韻が、まだ静かに残っている……</span></div>
 
 <script>
   // ============================================================
@@ -3310,10 +3337,10 @@
 
   function pickCardByRand(rand) {
     // INFINITY：0.00007%（他のレアリティの確率は変わらないよう、ここで先に切り出す）
-    if (rand < 0.00007) {
+    if (rand < 0.000085) {
       return CARDS.find(c => c.rarity === 'INFINITY');
     }
-    rand -= 0.00007;
+    rand -= 0.000085;
     let rarity;
     if (rand < 0.0001) rarity = 'X-ERR';
     else if (rand < 0.0011) rarity = 'GOD';
@@ -3328,11 +3355,12 @@
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
-  // 開発者モード専用：GOD以上（GOD / X-ERR）のみが出る抽選
-  // 元の確率比（0.001 / 0.0001）を保ったまま100%に正規化
+  // 開発者モード専用：GOD以上（GOD / X-ERR / INFINITY）のみが出る抽選
+  // 元の確率比（0.001 / 0.0001 / 0.00007）を保ったまま100%に正規化
   function pickCardByRandDevMode(rand) {
     let rarity;
-    if (rand < 9.09) rarity = 'X-ERR';
+    if (rand < 8.547) rarity = 'X-ERR';
+    else if (rand < 8.547 + 5.983) rarity = 'INFINITY';
     else rarity = 'GOD';
     const pool = CARDS.filter(c => c.rarity === rarity);
     return pool[Math.floor(Math.random() * pool.length)];
@@ -3395,9 +3423,11 @@
     }
   }
 
-  const INFINITY_LOCK_MS = 8000;
+  const INFINITY_LOCK_MS = 9000;
   const CUTIN_LOCK_MS = 5000;
   let cutinLockUntil = 0;
+  let cutinIsInfinity = false;
+  let infinityAfterglowTimeoutId = null;
 
   function drawGacha(times) {
     if (tickets < times) {
@@ -3451,13 +3481,15 @@
       resultDiv.innerHTML = resultsHtml;
 
       setInfinityEffects(false);
+      cutinIsInfinity = false;
       if (maxLevel === 9) {
         // INFINITY：天から神が降りてくる演出
         setGodEffects(false);
         setXerrEffects(false);
-        document.getElementById('cutin-sub-title').innerText = "✨✨✨ 天より神が降臨する ✨✨✨";
-        document.getElementById('cutin-main-title').innerText = `${topCard.emoji} INFINITY ${topCard.name}`;
-        document.getElementById('cutin-desc').innerText = "【0.00007%】ゲームは、ここで終わる。";
+        document.getElementById('cutin-sub-title').innerText = "……そして、物語は静かに幕を閉じる";
+        document.getElementById('cutin-main-title').innerHTML = `${topCard.emoji} INFINITY<br>${escapeHtml(topCard.name)}`;
+        document.getElementById('cutin-desc').innerText = "【0.000085%】ここまで付き合ってくれて、本当にありがとう。";
+        cutinIsInfinity = true;
         setInfinityEffects(true);
         document.getElementById('cutin-overlay').style.display = 'flex';
         cutinLockUntil = Date.now() + INFINITY_LOCK_MS;
@@ -3501,10 +3533,39 @@
 
   function closeCutin() {
     if (Date.now() < cutinLockUntil) return;
-    document.getElementById('cutin-overlay').style.display = 'none';
+    const overlay = document.getElementById('cutin-overlay');
+    if (cutinIsInfinity) {
+      // INFINITYだけは、すぐ消さずに静かにフェードアウトさせてから余韻を残す
+      overlay.classList.add('inf-closing');
+      overlay.style.cursor = 'default';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        overlay.classList.remove('inf-closing');
+        overlay.style.cursor = 'pointer';
+        setGodEffects(false);
+        setXerrEffects(false);
+        setInfinityEffects(false);
+        cutinIsInfinity = false;
+        showInfinityAfterglow();
+      }, 1400);
+      return;
+    }
+    overlay.style.display = 'none';
     setGodEffects(false);
     setXerrEffects(false);
     setInfinityEffects(false);
+  }
+
+  function showInfinityAfterglow() {
+    const el = document.getElementById('infinity-afterglow');
+    if (!el) return;
+    clearTimeout(infinityAfterglowTimeoutId);
+    el.style.display = 'block';
+    requestAnimationFrame(() => { el.classList.add('show'); });
+    infinityAfterglowTimeoutId = setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => { el.style.display = 'none'; }, 2300);
+    }, 7000);
   }
 
   // ============================================================
