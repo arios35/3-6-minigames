@@ -912,27 +912,67 @@
   .inf-fade { opacity: 0; animation: inf-fade-in 1.5s ease-out 2.6s forwards; }
   @keyframes inf-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-  /* INFINITY：タップして閉じたあとに残る余韻 */
-  .infinity-afterglow {
-    display: none;
-    position: fixed; left: 0; right: 0; bottom: 22px;
-    z-index: 9995; pointer-events: none;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 2.2s ease;
+  /* INFINITY：閉じたあとの静かなリザルト（成績発表）画面 */
+  #infinity-result {
+    background: radial-gradient(ellipse at 50% 28%, rgba(45,32,10,0.92) 0%, rgba(4,3,2,0.97) 72%);
   }
-  .infinity-afterglow.show { opacity: 1; }
-  .infinity-afterglow span {
-    display: inline-block;
-    padding: 10px 24px;
-    border-radius: 30px;
-    background: rgba(20,14,0,0.55);
-    border: 1px solid rgba(255,224,140,0.45);
+  .infinity-result-panel {
+    max-width: 340px;
+    width: 88%;
+    background: rgba(10,8,4,0.55);
+    border: 1px solid rgba(255,224,140,0.35);
+    border-radius: 20px;
+    padding: 26px 22px;
+    box-shadow: 0 0 40px rgba(255,210,110,0.15);
+    pointer-events: auto;
+    animation: ir-fade-in 1.6s ease both;
+  }
+  @keyframes ir-fade-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .infinity-result-title {
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-align: center;
+    margin: 0 0 6px 0;
     color: #ffe9b0;
-    font-size: 12.5px;
-    letter-spacing: 1.5px;
-    text-shadow: 0 0 10px rgba(255,220,120,0.8);
-    box-shadow: 0 0 22px rgba(255,210,110,0.35);
+    text-shadow: 0 0 14px rgba(255,220,120,0.6);
+  }
+  .infinity-result-sub {
+    font-size: 11.5px;
+    text-align: center;
+    color: var(--ink-dim);
+    margin: 0 0 20px 0;
+    letter-spacing: 1px;
+  }
+  .infinity-result-stats {
+    margin-bottom: 18px;
+  }
+  .infinity-result-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 7px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: var(--ink);
+  }
+  .infinity-result-row span:last-child {
+    font-weight: bold;
+    color: #ffe9b0;
+  }
+  .infinity-result-credits {
+    border-top: 1px dashed rgba(255,224,140,0.25);
+    padding-top: 14px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .infinity-result-credits p {
+    font-size: 11px;
+    color: var(--ink-dim);
+    margin: 4px 0;
+    letter-spacing: 0.5px;
   }
 
   .board-form textarea {
@@ -1208,6 +1248,7 @@
   <a class="menu-item-btn" href="#cabinet-board" onclick="closeMenu()">📮 意見箱・掲示板</a>
   <div class="menu-divider"></div>
   <a class="menu-item-btn" href="https://arios35.github.io/3-6-casino/">🎰 3-6 CASINO部屋へ</a>
+  <a class="menu-item-btn" href="https://arios35.github.io/-/">🌾 のんびり農場へ（完全独立の別ゲーム）</a>
 </div>
 <div class="menu-panel" id="mission-panel">
   <p style="font-size:12px; color: var(--ink-dim); margin: 4px 8px 12px 8px;">条件を達成したら「🎁 受け取る」でトークンGET！</p>
@@ -1258,7 +1299,9 @@
   </div>
 </div>
 
-<a class="arcade-btn btn-gold" href="https://arios35.github.io/3-6-casino/" style="display:block; max-width:420px; margin:0 auto 16px auto; text-decoration:none; text-align:center;">🎰 3-6 CASINO部屋へ</a>
+<a class="arcade-btn btn-gold" href="https://arios35.github.io/3-6-casino/" style="display:block; max-width:420px; margin:0 auto 10px auto; text-decoration:none; text-align:center;">🎰 3-6 CASINO部屋へ</a>
+<a class="arcade-btn btn-green" href="https://arios35.github.io/-/" style="display:block; max-width:420px; margin:0 auto 16px auto; text-decoration:none; text-align:center;">🌾 のんびり農場へ（完全独立の別ゲーム）</a>
+<p style="max-width:420px; margin:-10px auto 16px auto; font-size:11.5px; color: var(--ink-dim); text-align:center;">※おすすめはSafariから「ホーム画面に追加」して遊ぶことです</p>
 
 <p class="access-counter">👀 累計来場者数: <span id="total-visits">読み込み中...</span> 人目！</p>
 <p class="access-counter">🟢 現在アクセス中: <span id="online-count">読み込み中...</span> 人</p>
@@ -1552,7 +1595,25 @@
     <p style="font-size:14px; color:#fff; margin-top:35px; background:rgba(0,0,0,0.7); display:inline-block; padding:8px 20px; border-radius:20px; border:1px solid #fff;">（タップして結果を確認する）</p>
   </div>
 </div>
-<div id="infinity-afterglow" class="infinity-afterglow"><span>♾️ INFINITY の余韻が、まだ静かに残っている……</span></div>
+<div id="infinity-result" class="overlay" onclick="closeInfinityResult()">
+  <div class="infinity-result-panel" onclick="event.stopPropagation()">
+    <p class="infinity-result-title">♾️ RESULT</p>
+    <p class="infinity-result-sub">ここまで遊んでくれて、ありがとう。</p>
+    <div class="infinity-result-stats">
+      <div class="infinity-result-row"><span>あなたの総ガチャ回数</span><span id="ir-my-gacha">0</span></div>
+      <div class="infinity-result-row"><span>みんなの総ガチャ回数</span><span id="ir-total-gacha">0</span></div>
+      <div class="infinity-result-row"><span>図鑑コンプリート</span><span id="ir-album">0/64</span></div>
+      <div class="infinity-result-row"><span>所持トークン</span><span id="ir-tickets">0枚</span></div>
+    </div>
+    <div class="infinity-result-credits">
+      <p>コード作成：Claude＆Gemini</p>
+      <p>アイデア：ChatGPT＆アーリオス</p>
+      <p>ページ作成補助：Gemini</p>
+      <p>遊んでくれた人：あなた</p>
+    </div>
+    <button class="arcade-btn btn-gold" style="width:100%;" onclick="closeInfinityResult()">閉じる</button>
+  </div>
+</div>
 
 <script>
   // ============================================================
@@ -3427,7 +3488,6 @@
   const CUTIN_LOCK_MS = 5000;
   let cutinLockUntil = 0;
   let cutinIsInfinity = false;
-  let infinityAfterglowTimeoutId = null;
 
   function drawGacha(times) {
     if (tickets < times) {
@@ -3546,7 +3606,7 @@
         setXerrEffects(false);
         setInfinityEffects(false);
         cutinIsInfinity = false;
-        showInfinityAfterglow();
+        showInfinityResult();
       }, 1400);
       return;
     }
@@ -3556,16 +3616,17 @@
     setInfinityEffects(false);
   }
 
-  function showInfinityAfterglow() {
-    const el = document.getElementById('infinity-afterglow');
-    if (!el) return;
-    clearTimeout(infinityAfterglowTimeoutId);
-    el.style.display = 'block';
-    requestAnimationFrame(() => { el.classList.add('show'); });
-    infinityAfterglowTimeoutId = setTimeout(() => {
-      el.classList.remove('show');
-      setTimeout(() => { el.style.display = 'none'; }, 2300);
-    }, 7000);
+  function showInfinityResult() {
+    document.getElementById('ir-my-gacha').innerText = myGachaCount.toLocaleString();
+    document.getElementById('ir-total-gacha').innerText = document.getElementById('total-gacha-count').innerText;
+    const ownedCount = Object.values(ownedCards).filter(Boolean).length;
+    document.getElementById('ir-album').innerText = `${ownedCount}/${CARDS.length}`;
+    document.getElementById('ir-tickets').innerText = `${tickets.toLocaleString()}枚`;
+    document.getElementById('infinity-result').style.display = 'flex';
+  }
+
+  function closeInfinityResult() {
+    document.getElementById('infinity-result').style.display = 'none';
   }
 
   // ============================================================
